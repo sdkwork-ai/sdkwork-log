@@ -1,0 +1,27 @@
+[package]
+name = "sdkwork-log-database-host"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "SDKWork Log database lifecycle bootstrap (log_request module)."
+
+[lib]
+name = "sdkwork_log_database_host"
+path = "src/lib.rs"
+
+[[bin]]
+name = "sdkwork-log-db"
+path = "src/main.rs"
+
+[dependencies]
+dotenvy = "0.15"
+sdkwork-database-config = { workspace = true }
+sdkwork-database-lifecycle = { workspace = true, default-features = false }
+sdkwork-database-spi = { workspace = true }
+sdkwork-database-sqlx = { workspace = true, default-features = false }
+tokio.workspace = true
+
+[features]
+default = ["postgres"]
+postgres = ["sdkwork-database-lifecycle/postgres", "sdkwork-database-sqlx/postgres"]
+sqlite = ["sdkwork-database-lifecycle/sqlite", "sdkwork-database-sqlx/sqlite"]

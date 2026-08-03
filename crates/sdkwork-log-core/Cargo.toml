@@ -1,0 +1,19 @@
+[package]
+name = "sdkwork-log-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "SDKWork log foundation: framework-agnostic request log domain model and store contract."
+
+[lib]
+name = "sdkwork_log_core"
+path = "src/lib.rs"
+
+[dependencies]
+async-trait.workspace = true
+getrandom.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true

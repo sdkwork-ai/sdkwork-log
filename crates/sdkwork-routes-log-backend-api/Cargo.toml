@@ -1,0 +1,27 @@
+[package]
+name = "sdkwork-routes-log-backend-api"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Platform backend-api for request log queries (log_request list/search)."
+
+[lib]
+name = "sdkwork_routes_log_backend_api"
+path = "src/lib.rs"
+
+[dependencies]
+axum.workspace = true
+http.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sdkwork-log-core.workspace = true
+sdkwork-web-core.workspace = true
+sdkwork-web-contract.workspace = true
+# serde_int64 helper：API JSON 边界 int64-as-string 强制（API_SPEC §13）。
+sdkwork-utils-rust.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+tokio.workspace = true
+tower.workspace = true

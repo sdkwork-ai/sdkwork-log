@@ -1,0 +1,36 @@
+[package]
+name = "sdkwork-log-store-sqlx"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "SQLx-backed RequestLogStore for the SDKWork log foundation (log_request table)."
+
+[lib]
+name = "sdkwork_log_store_sqlx"
+path = "src/lib.rs"
+
+[dependencies]
+async-trait.workspace = true
+serde.workspace = true
+sqlx = { workspace = true }
+sdkwork-log-core.workspace = true
+sdkwork-database-config.workspace = true
+sdkwork-database-sqlx = { workspace = true, default-features = false }
+tokio.workspace = true
+tracing.workspace = true
+
+[features]
+default = ["postgres"]
+sqlite = [
+    "sqlx/sqlite",
+    "sdkwork-database-sqlx/sqlite",
+]
+postgres = [
+    "sqlx/postgres",
+    "sdkwork-database-sqlx/postgres",
+]
+
+[dev-dependencies]
+tokio.workspace = true
+# 自依赖启用 sqlite feature，使 `cargo test` 可在本地 SQLite 上运行集成测试。
+sdkwork-log-store-sqlx = { path = ".", features = ["sqlite"] }

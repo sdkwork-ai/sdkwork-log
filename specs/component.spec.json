@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.component.spec",
+  "component": {
+    "name": "sdkwork-log",
+    "displayName": "SDKWork Log Foundation",
+    "version": "0.1.0",
+    "type": "rust-workspace",
+    "root": "sdkwork-log",
+    "domain": "platform",
+    "capability": "logging",
+    "status": "implementing",
+    "languages": ["rust"],
+    "generated": false,
+    "private": false
+  },
+  "canonicalSpecs": [
+    { "file": "OBSERVABILITY_SPEC.md", "path": "../../sdkwork-specs/OBSERVABILITY_SPEC.md", "purpose": "Log correlation, access log traceId, audit traceId." },
+    { "file": "DATABASE_SPEC.md", "path": "../../sdkwork-specs/DATABASE_SPEC.md", "purpose": "Audit fields, table lifecycle, repository standards." },
+    { "file": "API_SPEC.md", "path": "../../sdkwork-specs/API_SPEC.md", "purpose": "HTTP contract §10/§14/§15/§16." },
+    { "file": "WEB_FRAMEWORK_SPEC.md", "path": "../../sdkwork-specs/WEB_FRAMEWORK_SPEC.md", "purpose": "Web framework integration constraints." },
+    { "file": "WEB_BACKEND_SPEC.md", "path": "../../sdkwork-specs/WEB_BACKEND_SPEC.md", "purpose": "Handler/service layering." },
+    { "file": "PAGINATION_SPEC.md", "path": "../../sdkwork-specs/PAGINATION_SPEC.md", "purpose": "List/search pagination contract." },
+    { "file": "RUST_CODE_SPEC.md", "path": "../../sdkwork-specs/RUST_CODE_SPEC.md", "purpose": "Rust implementation rules." },
+    { "file": "CODE_STYLE_SPEC.md", "path": "../../sdkwork-specs/CODE_STYLE_SPEC.md", "purpose": "Cross-language code style." },
+    { "file": "NAMING_SPEC.md", "path": "../../sdkwork-specs/NAMING_SPEC.md", "purpose": "Naming conventions." },
+    { "file": "TEST_SPEC.md", "path": "../../sdkwork-specs/TEST_SPEC.md", "purpose": "Verification expectations." },
+    { "file": "QUALITY_GATE_SPEC.md", "path": "../../sdkwork-specs/QUALITY_GATE_SPEC.md", "purpose": "Release gate evidence." }
+  ],
+  "contracts": {
+    "requestLogStore": {
+      "storeContract": "crates/sdkwork-log-core",
+      "table": "log_request",
+      "traceIdRequired": true,
+      "ttlDefaultSecs": 7776000,
+      "engines": ["postgres", "sqlite"]
+    },
+    "apiSurfaces": ["backend-api"],
+    "extensionTraits": [
+      "RequestLogStore"
+    ],
+    "dependencyRule": "core-stays-framework-agnostic; adapters-may-depend-on-web-framework",
+    "runtimeEntrypoints": [
+      "crates/sdkwork-log-database-host/src/main.rs"
+    ]
+  },
+  "verification": {
+    "commands": [
+      "cargo test --workspace",
+      "cargo clippy --workspace -- -D warnings",
+      "cargo test -p sdkwork-log-store-sqlx",
+      "cargo test -p sdkwork-routes-log-backend-api --test routes_contract",
+      "cargo test -p sdkwork-routes-log-backend-api --test openapi_authority"
+    ]
+  }
+}

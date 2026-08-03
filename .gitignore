@@ -1,0 +1,34 @@
+# Rust build artifacts
+/target
+**/*.rs.bk
+
+# Logs and temp
+*.log
+/tmp
+
+# OS files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# IDE / Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.fleet/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Coverage and profiling
+*.profraw
+*.profdata
+tarpaulin-report.html
+cobertura.xml

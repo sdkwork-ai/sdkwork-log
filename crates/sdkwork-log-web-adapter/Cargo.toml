@@ -1,0 +1,21 @@
+[package]
+name = "sdkwork-log-web-adapter"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Web framework capture adapter: records every HTTP request (including webhooks) through sdkwork-log stores."
+
+[lib]
+name = "sdkwork_log_web_adapter"
+path = "src/lib.rs"
+
+[dependencies]
+async-trait.workspace = true
+axum.workspace = true
+http.workspace = true
+sdkwork-log-core.workspace = true
+sdkwork-web-core.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+tokio.workspace = true

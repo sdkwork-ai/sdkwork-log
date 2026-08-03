@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.database.table-registry",
+  "tables": [
+    {
+      "table_name": "log_request",
+      "owner": "log-platform",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
+    }
+  ]
+}

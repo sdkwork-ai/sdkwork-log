@@ -1,0 +1,38 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/sdkwork-log-core",
+    "crates/sdkwork-log-store-sqlx",
+    "crates/sdkwork-log-database-host",
+    "crates/sdkwork-log-web-adapter",
+    "crates/sdkwork-routes-log-backend-api",
+]
+
+[workspace.package]
+edition = "2021"
+version = "0.1.0"
+license = "AGPL-3.0-or-later"
+
+[workspace.dependencies]
+async-trait = "0.1"
+axum = { version = "0.8", features = ["ws"] }
+getrandom = "0.2"
+http = "1"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+sqlx = { version = "0.9", default-features = false, features = ["runtime-tokio", "macros", "migrate"] }
+tokio = { version = "1.48", features = ["macros", "rt-multi-thread", "sync", "signal"] }
+tower = { version = "0.5", features = ["util"] }
+tracing = "0.1"
+
+sdkwork-log-core = { path = "crates/sdkwork-log-core" }
+sdkwork-log-store-sqlx = { path = "crates/sdkwork-log-store-sqlx", default-features = false }
+
+sdkwork-database-config = { path = "../sdkwork-database/crates/sdkwork-database-config" }
+sdkwork-database-lifecycle = { path = "../sdkwork-database/crates/sdkwork-database-lifecycle", default-features = false }
+sdkwork-database-spi = { path = "../sdkwork-database/crates/sdkwork-database-spi" }
+sdkwork-database-sqlx = { path = "../sdkwork-database/crates/sdkwork-database-sqlx", default-features = false }
+# SDKWork 跨语言工具库（serde_int64、offset 分页等）。API_SPEC §13 int64-as-string 强制使用。
+sdkwork-utils-rust = { path = "../sdkwork-utils/packages/sdkwork-utils-rust" }
+sdkwork-web-core = { path = "../sdkwork-web-framework/crates/sdkwork-web-core" }
+sdkwork-web-contract = { path = "../sdkwork-web-framework/crates/sdkwork-web-contract" }

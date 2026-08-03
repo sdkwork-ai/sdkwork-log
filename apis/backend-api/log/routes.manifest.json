@@ -1,0 +1,15 @@
+[
+  {
+    "alternatePermissions": [
+      "log.platform.read"
+    ],
+    "apiSurface": "backend-api",
+    "auth": "dual-token",
+    "forbidCredentialHeaders": false,
+    "method": "get",
+    "operationId": "log.requestLogs.list",
+    "path": "/backend/v3/api/log/request_logs",
+    "requestContext": "WebRequestContext",
+    "requiredPermission": "log.tenant.read"
+  }
+]
