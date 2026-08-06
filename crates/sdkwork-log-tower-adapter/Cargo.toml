@@ -1,0 +1,26 @@
+[package]
+name = "sdkwork-log-tower-adapter"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Tower/axum capture middleware: persists full request logs (metadata + redacted request/response bodies) through sdkwork-log stores."
+
+[lib]
+name = "sdkwork_log_tower_adapter"
+path = "src/lib.rs"
+
+[dependencies]
+axum.workspace = true
+bytes.workspace = true
+http.workspace = true
+http-body.workspace = true
+http-body-util.workspace = true
+sdkwork-log-core.workspace = true
+tokio.workspace = true
+tower.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+sdkwork-log-store-sqlx = { workspace = true }
+serde_json.workspace = true
+sqlx = { workspace = true, features = ["postgres", "runtime-tokio"] }

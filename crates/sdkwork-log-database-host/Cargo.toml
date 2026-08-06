@@ -24,4 +24,3 @@ tokio.workspace = true
 [features]
 default = ["postgres"]
 postgres = ["sdkwork-database-lifecycle/postgres", "sdkwork-database-sqlx/postgres"]
-sqlite = ["sdkwork-database-lifecycle/sqlite", "sdkwork-database-sqlx/sqlite"]

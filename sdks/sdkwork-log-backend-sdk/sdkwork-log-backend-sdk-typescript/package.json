@@ -1,0 +1,47 @@
+{
+  "name": "@sdkwork/log-backend-sdk",
+  "version": "0.1.0",
+  "sdkworkRole": "composed-facade",
+  "description": "SDKWork Log backend API SDK",
+  "author": "SDKWork Team",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "scripts": {
+    "build": "node custom/build-runtime.mjs",
+    "dev": "node custom/build-runtime.mjs",
+    "prepublishOnly": "npm run build",
+    "typecheck": "tsc --noEmit --project tsconfig.json"
+  },
+  "dependencies": {
+    "@sdkwork/sdk-common": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "20.19.39",
+    "typescript": "5.8.3",
+    "rollup": "4.60.1"
+  },
+  "keywords": [
+    "sdk",
+    "api",
+    "backend",
+    "log",
+    "sdkwork"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

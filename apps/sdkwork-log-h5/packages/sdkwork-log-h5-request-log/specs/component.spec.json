@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.component.spec",
+  "component": {
+    "name": "sdkwork-log-h5-request-log",
+    "displayName": "SDKWork Log H5 Request Log Surface",
+    "version": "0.1.0",
+    "type": "h5-ui",
+    "root": "sdkwork-log-h5-request-log",
+    "domain": "platform",
+    "capability": "logging",
+    "status": "implementing",
+    "languages": ["typescript", "react"],
+    "generated": false,
+    "private": false
+  },
+  "surface": "h5",
+  "contracts": {
+    "backendSdkFamilies": ["sdkwork-log-backend-sdk"],
+    "apiSurfaces": ["backend-api"],
+    "extensionTraits": ["RequestLogService", "RequestLogCardList", "RequestLogDetailSheet"]
+  }
+}

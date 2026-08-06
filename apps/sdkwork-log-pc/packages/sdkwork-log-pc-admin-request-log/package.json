@@ -1,0 +1,39 @@
+{
+  "name": "@sdkwork/log-pc-admin-request-log",
+  "version": "0.1.0",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "main": "./src/index.tsx",
+  "description": "PC admin request log management surface for SDKWork log: full list/detail page over @sdkwork/log-backend-sdk.",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@sdkwork/log-pc-request-log": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-i18next": ">=14"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.12",
+    "typescript": "5.8.3"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "private": true,
+  "exports": {
+    ".": {
+      "types": "./src/index.tsx",
+      "import": "./src/index.tsx",
+      "default": "./src/index.tsx"
+    },
+    "./i18n": {
+      "types": "./src/i18n/index.ts",
+      "import": "./src/i18n/index.ts",
+      "default": "./src/i18n/index.ts"
+    }
+  }
+}

@@ -11,5 +11,18 @@
     "path": "/backend/v3/api/log/request_logs",
     "requestContext": "WebRequestContext",
     "requiredPermission": "log.tenant.read"
+  },
+  {
+    "alternatePermissions": [
+      "log.platform.read"
+    ],
+    "apiSurface": "backend-api",
+    "auth": "dual-token",
+    "forbidCredentialHeaders": false,
+    "method": "get",
+    "operationId": "log.requestLogs.detail",
+    "path": "/backend/v3/api/log/request_logs/{id}",
+    "requestContext": "WebRequestContext",
+    "requiredPermission": "log.tenant.read"
   }
 ]

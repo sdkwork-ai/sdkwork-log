@@ -17,8 +17,8 @@ pub mod store;
 pub use query::{RequestLogListQuery, RequestLogPage, DEFAULT_LIST_PAGE_SIZE, MAX_LIST_PAGE_SIZE};
 pub use record::{LogApiSurface, RequestLogRecord, RequestLogRow};
 pub use redact::{
-    capture_safe_headers, is_safe_request_header, is_sensitive_field_name, redact_query_params,
-    redact_sensitive_value, REDACTED,
+    capture_safe_headers, is_safe_request_header, is_sensitive_field_name, redact_body_text,
+    redact_json_body, redact_query_params, redact_sensitive_value, truncate_body_text, REDACTED,
 };
 pub use request_id::new_request_log_id;
 pub use store::{RequestLogStore, RequestLogStoreError};

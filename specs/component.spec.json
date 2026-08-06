@@ -5,12 +5,13 @@
     "name": "sdkwork-log",
     "displayName": "SDKWork Log Foundation",
     "version": "0.1.0",
-    "type": "rust-workspace",
+    "type": "multi-surface-workspace",
     "root": "sdkwork-log",
     "domain": "platform",
     "capability": "logging",
     "status": "implementing",
-    "languages": ["rust"],
+    "languages": ["rust", "typescript", "react"],
+    "manifests": ["Cargo.toml", "package.json"],
     "generated": false,
     "private": false
   },
@@ -22,6 +23,9 @@
     { "file": "WEB_BACKEND_SPEC.md", "path": "../../sdkwork-specs/WEB_BACKEND_SPEC.md", "purpose": "Handler/service layering." },
     { "file": "PAGINATION_SPEC.md", "path": "../../sdkwork-specs/PAGINATION_SPEC.md", "purpose": "List/search pagination contract." },
     { "file": "RUST_CODE_SPEC.md", "path": "../../sdkwork-specs/RUST_CODE_SPEC.md", "purpose": "Rust implementation rules." },
+    { "file": "TYPESCRIPT_CODE_SPEC.md", "path": "../../sdkwork-specs/TYPESCRIPT_CODE_SPEC.md", "purpose": "TypeScript package rules." },
+    { "file": "FRONTEND_CODE_SPEC.md", "path": "../../sdkwork-specs/FRONTEND_CODE_SPEC.md", "purpose": "Frontend component rules." },
+    { "file": "BACKEND_UI_SPEC.md", "path": "../../sdkwork-specs/BACKEND_UI_SPEC.md", "purpose": "Admin surface contracts (backend-admin)." },
     { "file": "CODE_STYLE_SPEC.md", "path": "../../sdkwork-specs/CODE_STYLE_SPEC.md", "purpose": "Cross-language code style." },
     { "file": "NAMING_SPEC.md", "path": "../../sdkwork-specs/NAMING_SPEC.md", "purpose": "Naming conventions." },
     { "file": "TEST_SPEC.md", "path": "../../sdkwork-specs/TEST_SPEC.md", "purpose": "Verification expectations." },
@@ -33,13 +37,35 @@
       "table": "log_request",
       "traceIdRequired": true,
       "ttlDefaultSecs": 7776000,
-      "engines": ["postgres", "sqlite"]
+      "engines": ["postgres", "sqlite"],
+      "bodyCapture": {
+        "redactedTextOnly": true,
+        "maxBodyBufferBytes": 262144
+      }
     },
     "apiSurfaces": ["backend-api"],
+    "frontendSurfaces": [
+      {
+        "package": "apps/sdkwork-log-pc/packages/sdkwork-log-pc-request-log",
+        "surface": "pc",
+        "sdkFamily": "sdkwork-log-backend-sdk"
+      },
+      {
+        "package": "apps/sdkwork-log-h5/packages/sdkwork-log-h5-request-log",
+        "surface": "h5",
+        "sdkFamily": "sdkwork-log-backend-sdk"
+      },
+      {
+        "package": "apps/sdkwork-log-pc/packages/sdkwork-log-pc-admin-request-log",
+        "surface": "backend-admin",
+        "sdkFamily": "sdkwork-log-backend-sdk"
+      }
+    ],
+    "sdkFamilies": ["sdkwork-log-backend-sdk"],
     "extensionTraits": [
       "RequestLogStore"
     ],
-    "dependencyRule": "core-stays-framework-agnostic; adapters-may-depend-on-web-framework",
+    "dependencyRule": "core-stays-framework-agnostic; adapters-may-depend-on-web-framework; frontend-packages-may-depend-on-log-backend-sdk",
     "runtimeEntrypoints": [
       "crates/sdkwork-log-database-host/src/main.rs"
     ]
@@ -50,7 +76,9 @@
       "cargo clippy --workspace -- -D warnings",
       "cargo test -p sdkwork-log-store-sqlx",
       "cargo test -p sdkwork-routes-log-backend-api --test routes_contract",
-      "cargo test -p sdkwork-routes-log-backend-api --test openapi_authority"
+      "cargo test -p sdkwork-routes-log-backend-api --test openapi_authority",
+      "pnpm install",
+      "pnpm typecheck"
     ]
   }
 }

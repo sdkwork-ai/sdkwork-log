@@ -1,11 +1,11 @@
 //! Thin HTTP adapters for the log backend-api (`WEB_BACKEND_SPEC.md` §2).
 
-use crate::dto::{AdminLogListQuery, LogRequestListItem};
+use crate::dto::{AdminLogListQuery, LogRequestDetailEnvelope, LogRequestDetailItem, LogRequestListItem};
 use crate::pagination::{offset_page, validated_offset_params};
 use crate::response::{finish_api_json, ok_json, ApiProblem};
 use crate::state::LogQueryState;
 use crate::tenant_scope::{require_tenant_read, resolve_list_tenant_id};
-use axum::extract::{Query, State};
+use axum::extract::{Path, Query, State};
 use axum::response::Response;
 use sdkwork_log_core::{LogApiSurface, RequestLogListQuery};
 use sdkwork_web_core::WebRequestContext;
@@ -55,6 +55,37 @@ pub async fn list_request_logs(
                 page.total,
                 params,
             ))
+        }
+        .await,
+    )
+}
+
+/// Fetches one request log row by id, including the full redacted
+/// request/response bodies. Tenant isolation mirrors list semantics: tenant
+/// admins only ever see rows of their own tenant; a missing or foreign row is
+/// reported as 404 so existence is not leaked.
+pub async fn get_request_log(
+    ctx: WebRequestContext,
+    State(state): State<LogQueryState>,
+    Path(id): Path<String>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            require_tenant_read(&ctx)?;
+            let tenant_scope = resolve_list_tenant_id(&ctx, None)?;
+            let row = state
+                .service
+                .get_request_log(&id)
+                .await?
+                .filter(|row| match &tenant_scope {
+                    Some(scope) => row.record.tenant_id.as_deref() == Some(scope.as_str()),
+                    None => true,
+                })
+                .ok_or_else(|| ApiProblem::not_found("request log was not found"))?;
+            ok_json(LogRequestDetailEnvelope {
+                item: LogRequestDetailItem::from_row(row),
+            })
         }
         .await,
     )

@@ -7,11 +7,87 @@ use sdkwork_web_contract::{
     validate_openapi_routes_context_selectors, HttpMethod, OPENAPI_API_SURFACE_EXTENSION,
     OPENAPI_AUTH_MODE_EXTENSION, OPENAPI_PERMISSION_EXTENSION, OPENAPI_REQUEST_CONTEXT_EXTENSION,
 };
-use serde_json::Value;
+use serde_json::{json, Value};
+
+/// SDK family metadata injected into the committed OpenAPI authority so it can
+/// serve directly as an SDK generation input (`x-api-prefix`, `x-sdk-family`,
+/// `x-sdk-client`, servers, security, tags).
+fn authority_openapi_document() -> Value {
+    let mut doc = build_openapi_document("SDKWork Log Backend API", ROUTES);
+    if let Value::Object(map) = &mut doc {
+        map.insert(
+            "jsonSchemaDialect".to_owned(),
+            json!("https://json-schema.org/draft/2020-12/schema"),
+        );
+        map.insert("x-api-prefix".to_owned(), json!("/backend/v3/api"));
+        map.insert("x-sdk-family".to_owned(), json!("sdkwork-log-backend-sdk"));
+        map.insert("x-sdk-client".to_owned(), json!("SdkworkBackendClient"));
+        map.insert(
+            "servers".to_owned(),
+            json!([{ "description": "Local backend API server", "url": "http://localhost:18081" }]),
+        );
+        map.insert(
+            "security".to_owned(),
+            json!([{ "AccessToken": [], "AuthToken": [] }]),
+        );
+        let mut tag_names = std::collections::BTreeSet::new();
+        for route in ROUTES {
+            tag_names.insert(route.tag);
+        }
+        map.insert(
+            "tags".to_owned(),
+            json!(tag_names
+                .iter()
+                .map(|tag| json!({ "name": tag, "description": format!("{tag} operations exposed by the log foundation.") }))
+                .collect::<Vec<_>>()),
+        );
+    }
+    // Inject the log-specific list filters (the framework generator emits only
+    // the generic list parameters). Schemas follow `API_SPEC.md` §13:
+    // int64-as-string for epoch-second range filters.
+    if let Some(paths) = doc["paths"].as_object_mut() {
+        if let Some(operation) = paths[paths::request_logs::PATH]
+            .get_mut("get")
+            .and_then(Value::as_object_mut)
+        {
+            let parameters = operation.entry("parameters").or_insert_with(|| json!([]));
+            if let Some(parameters) = parameters.as_array_mut() {
+                let filters = [
+                    ("trace_id", json!({ "type": "string" })),
+                    ("request_id", json!({ "type": "string" })),
+                    (
+                        "api_surface",
+                        json!({
+                            "type": "string",
+                            "enum": ["open-api", "app-api", "backend-api", "internal-api", "gateway-api", "unknown"]
+                        }),
+                    ),
+                    ("operation_id", json!({ "type": "string" })),
+                    ("service", json!({ "type": "string" })),
+                    (
+                        "status",
+                        json!({ "type": "integer", "minimum": 100, "maximum": 599 }),
+                    ),
+                    ("created_from", json!({ "type": "string", "pattern": "^[0-9]+$" })),
+                    ("created_to", json!({ "type": "string", "pattern": "^[0-9]+$" })),
+                ];
+                for (name, schema) in filters {
+                    parameters.push(json!({
+                        "in": "query",
+                        "name": name,
+                        "required": false,
+                        "schema": schema,
+                    }));
+                }
+            }
+        }
+    }
+    doc
+}
 
 #[test]
 fn openapi_authority_matches_manifest_contract() {
-    let doc = build_openapi_document("SDKWork Log Backend API", ROUTES);
+    let doc = authority_openapi_document();
     let paths = doc["paths"].as_object().expect("paths object");
     assert_eq!(ROUTES.len(), count_operations(paths));
 
@@ -40,7 +116,7 @@ fn openapi_authority_matches_manifest_contract() {
 
 #[test]
 fn committed_openapi_authority_matches_runtime_contract() {
-    let expected = build_openapi_document("SDKWork Log Backend API", ROUTES);
+    let expected = authority_openapi_document();
     let authority_dir = authority_dir();
     let committed = read_json(authority_dir.join("openapi.json"));
     assert_eq!(
@@ -116,7 +192,7 @@ fn committed_openapi_declares_permission_extensions() {
 #[test]
 #[ignore = "run manually to refresh apis/backend-api/log/openapi.json"]
 fn materialize_openapi_authority_file() {
-    let doc = build_openapi_document("SDKWork Log Backend API", ROUTES);
+    let doc = authority_openapi_document();
     let rendered = serde_json::to_string_pretty(&doc).expect("serialize openapi");
     let manifest = serde_json::to_string_pretty(&manifest_rows()).expect("serialize manifest");
     let root = authority_dir();
@@ -213,6 +289,7 @@ fn auth_mode_label(auth: sdkwork_web_contract::RouteAuth) -> &'static str {
         RouteAuth::IngressToken => "ingress-token",
         RouteAuth::OAuth => "oauth",
         RouteAuth::OpenApiFlexible => "open-api-flexible",
+        RouteAuth::OpenApiBearerFlexible => "open-api-bearer-flexible",
         RouteAuth::ApiKeyOrDualToken => "api-key-or-dual-token",
         RouteAuth::RefreshToken => "refresh-token",
         RouteAuth::AgentToken => "agent-token",

@@ -1,9 +1,11 @@
-//! Request log query backend-api (list/search with traceId filters).
+//! Request log query backend-api (list/search + detail with traceId filters).
 //!
 //! Mount the router with a [`RequestLogStore`] (for example
-//! [`SqlxRequestLogStore`]): every request to `GET /backend/v3/api/log/request_logs`
-//! is served through the standard `SdkWorkApiResponse` envelope and offset
-//! pagination (`API_SPEC.md` §14–§16, `PAGINATION_SPEC.md`).
+//! [`SqlxRequestLogStore`]): `GET /backend/v3/api/log/request_logs` lists rows
+//! (metadata only) and `GET /backend/v3/api/log/request_logs/{id}` returns the
+//! full redacted request/response bodies. Responses use the standard
+//! `SdkWorkApiResponse` envelope and offset pagination (`API_SPEC.md` §14–§16,
+//! `PAGINATION_SPEC.md`).
 
 pub mod dto;
 pub mod handlers;
@@ -31,6 +33,10 @@ pub fn build_router(store: Arc<dyn sdkwork_log_core::RequestLogStore>) -> axum::
         .route(
             paths::request_logs::PATH,
             get(handlers::list_request_logs),
+        )
+        .route(
+            paths::request_log_detail::PATH,
+            get(handlers::get_request_log),
         )
         .with_state(state::LogQueryState::from_store(store))
 }

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.component.spec",
+  "component": {
+    "name": "sdkwork-log-pc-request-log",
+    "displayName": "SDKWork Log PC Request Log Surface",
+    "version": "0.1.0",
+    "type": "pc-ui",
+    "root": "sdkwork-log-pc-request-log",
+    "domain": "platform",
+    "capability": "logging",
+    "status": "implementing",
+    "languages": ["typescript", "react"],
+    "generated": false,
+    "private": false
+  },
+  "surface": "pc",
+  "contracts": {
+    "backendSdkFamilies": ["sdkwork-log-backend-sdk"],
+    "apiSurfaces": ["backend-api"],
+    "extensionTraits": ["RequestLogService", "RequestLogTable", "RequestLogDetailPanel"]
+  }
+}

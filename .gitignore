@@ -32,3 +32,15 @@ desktop.ini
 *.profdata
 tarpaulin-report.html
 cobertura.xml
+
+# Node / pnpm
+node_modules/
+dist/
+.runtime/
+*.tsbuildinfo
+.vite/
+.turbo/
+
+# Build artifacts
+build/
+.cache/

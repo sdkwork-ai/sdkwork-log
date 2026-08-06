@@ -225,6 +225,11 @@ pub fn request_log_record_from_state(
             .and_then(|error| error.failed_stage.clone()),
         query_params: state.redacted_query.clone(),
         request_headers: state.safe_request_headers.clone(),
+        // The web framework streams bodies and never exposes them to
+        // interceptor stages; body capture is handled by
+        // sdkwork-log-tower-adapter for tower/axum applications.
+        request_body: None,
+        response_body: None,
     }
 }
 

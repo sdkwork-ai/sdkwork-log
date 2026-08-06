@@ -35,6 +35,8 @@ fn record(trace_id: &str, request_id: &str, status: u16) -> RequestLogRecord {
         failed_stage: None,
         query_params: Some("page=1&page_size=20&token=[REDACTED]".to_owned()),
         request_headers: Some("{\"user-agent\":\"test-agent\"}".to_owned()),
+        request_body: Some("{\"prompt\":\"hi\",\"secret\":\"[REDACTED]\"}".to_owned()),
+        response_body: Some("{\"choices\":[]}".to_owned()),
     }
 }
 
@@ -187,4 +189,67 @@ async fn error_code_and_ranges_are_stored() {
     assert_eq!(1, page.total);
     assert_eq!(Some(40101), page.items[0].record.error_code);
     assert_eq!(Some(401), page.items[0].record.status_code);
+}
+
+#[tokio::test]
+async fn get_by_id_round_trips_full_input_and_output_bodies() {
+    let store = SqlxRequestLogStore::new_sqlite(test_pool().await);
+    let mut saved = record("trace-body", "req-body", 200);
+    saved.request_body = Some("{\"prompt\":\"hi\",\"secret\":\"[REDACTED]\"}".to_owned());
+    saved.response_body = Some("{\"choices\":[{\"text\":\"ok\"}]}".to_owned());
+    store.save(saved).await.expect("save");
+
+    let listed = store
+        .list(RequestLogListQuery::default().with_request_id("req-body"))
+        .await
+        .expect("list");
+    let id = listed.items[0].id.clone();
+
+    // List rows intentionally omit the potentially large bodies.
+    assert_eq!(None, listed.items[0].record.request_body);
+    assert_eq!(None, listed.items[0].record.response_body);
+
+    let fetched = store
+        .get_by_id(&id)
+        .await
+        .expect("get")
+        .expect("row exists");
+    assert_eq!(id, fetched.id);
+    assert_eq!(
+        Some("{\"prompt\":\"hi\",\"secret\":\"[REDACTED]\"}".to_owned()),
+        fetched.record.request_body
+    );
+    assert_eq!(
+        Some("{\"choices\":[{\"text\":\"ok\"}]}".to_owned()),
+        fetched.record.response_body
+    );
+    assert_eq!("trace-body", fetched.record.trace_id);
+}
+
+#[tokio::test]
+async fn get_by_id_returns_none_for_unknown_id() {
+    let store = SqlxRequestLogStore::new_sqlite(test_pool().await);
+    store.save(record("trace-1", "req-1", 200)).await.expect("save");
+    assert_eq!(None, store.get_by_id("does-not-exist").await.expect("get"));
+}
+
+#[tokio::test]
+async fn save_allows_missing_bodies() {
+    let store = SqlxRequestLogStore::new_sqlite(test_pool().await);
+    let mut saved = record("trace-none", "req-none", 204);
+    saved.request_body = None;
+    saved.response_body = None;
+    store.save(saved).await.expect("save");
+
+    let listed = store
+        .list(RequestLogListQuery::default().with_request_id("req-none"))
+        .await
+        .expect("list");
+    let fetched = store
+        .get_by_id(&listed.items[0].id)
+        .await
+        .expect("get")
+        .expect("row exists");
+    assert_eq!(None, fetched.record.request_body);
+    assert_eq!(None, fetched.record.response_body);
 }

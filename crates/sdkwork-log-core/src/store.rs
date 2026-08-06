@@ -1,7 +1,7 @@
 //! Framework-agnostic request log store contract.
 
 use crate::query::{RequestLogListQuery, RequestLogPage};
-use crate::record::RequestLogRecord;
+use crate::record::{RequestLogRecord, RequestLogRow};
 use async_trait::async_trait;
 use std::fmt;
 
@@ -42,4 +42,8 @@ pub trait RequestLogStore: Send + Sync {
     /// Offset-mode list with optional filters; rows newest-first
     /// (`created_at` DESC, `id` DESC). Filtering and pagination happen in SQL.
     async fn list(&self, query: RequestLogListQuery) -> Result<RequestLogPage, RequestLogStoreError>;
+
+    /// Fetches one persisted row by id, including the full redacted request and
+    /// response bodies. Returns `Ok(None)` when the id does not exist.
+    async fn get_by_id(&self, id: &str) -> Result<Option<RequestLogRow>, RequestLogStoreError>;
 }

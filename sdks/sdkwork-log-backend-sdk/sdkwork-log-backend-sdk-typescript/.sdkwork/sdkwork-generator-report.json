@@ -1,0 +1,195 @@
+{
+  "schemaVersion": 1,
+  "generator": "@sdkwork/sdk-generator",
+  "artifacts": {
+    "stateDir": ".sdkwork",
+    "manifestPath": ".sdkwork/sdkwork-generator-manifest.json",
+    "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
+    "executionReportPath": ".sdkwork/sdkwork-generator-report.json",
+    "manualBackupDir": ".sdkwork/manual-backups"
+  },
+  "status": "ok",
+  "mode": "apply",
+  "hasChanges": true,
+  "hasDestructiveChanges": false,
+  "changeFingerprint": "e9d13f660cb680f6193657291ac524d1ccc96a15e91ab2c94420e1b97af87cf8",
+  "changeImpact": {
+    "schemaVersion": 1,
+    "areas": [
+      "documentation",
+      "build-metadata",
+      "custom-scaffold"
+    ],
+    "details": [
+      {
+        "area": "documentation",
+        "paths": [
+          "README.md"
+        ]
+      },
+      {
+        "area": "build-metadata",
+        "paths": [
+          "sdkwork-sdk.json"
+        ]
+      },
+      {
+        "area": "custom-scaffold",
+        "paths": [
+          "custom/README.md"
+        ]
+      }
+    ],
+    "requiresVerification": false,
+    "summary": "Init only changed scaffold metadata and custom extension boundaries. Verification can be skipped until sdkgen generate creates a buildable SDK package."
+  },
+  "executionDecision": {
+    "schemaVersion": 1,
+    "riskLevel": "low",
+    "nextAction": "complete",
+    "requiresManualReview": false,
+    "applyRequiresExpectedFingerprint": false,
+    "summary": "SDK workspace scaffold has been initialized. Run sdkgen generate when an OpenAPI spec is ready.",
+    "reasons": [
+      "init-scaffold-applied",
+      "documentation",
+      "build-metadata",
+      "custom-scaffold"
+    ]
+  },
+  "executionHandoff": {
+    "schemaVersion": 1,
+    "summary": "Workspace scaffold is ready. Generate the SDK when the OpenAPI spec is available.",
+    "steps": [
+      {
+        "id": "generate-sdk-from-scaffold",
+        "title": "Generate SDK from the scaffolded workspace",
+        "required": false,
+        "rationale": "Init only creates the workspace boundary. Run generate after you have an OpenAPI 3.x specification.",
+        "command": "sdkgen",
+        "args": [
+          "generate",
+          "-i",
+          "./openapi.json",
+          "-o",
+          ".",
+          "-n",
+          "sdkwork-log-backend-sdk",
+          "-l",
+          "typescript",
+          "-t",
+          "backend",
+          "--fixed-sdk-version",
+          "0.1.0",
+          "--package-name",
+          "@sdkwork/log-backend-sdk",
+          "--description",
+          "SDKWork Log backend API SDK"
+        ],
+        "displayCommand": "sdkgen generate -i ./openapi.json -o . -n sdkwork-log-backend-sdk -l typescript -t backend --fixed-sdk-version 0.1.0 --package-name @sdkwork/log-backend-sdk --description \"SDKWork Log backend API SDK\""
+      }
+    ]
+  },
+  "verificationPlan": {
+    "shouldRun": false,
+    "runPhase": "skip",
+    "summary": "Init only changed scaffold metadata and custom extension boundaries. Verification can be skipped until sdkgen generate creates a buildable SDK package.",
+    "steps": []
+  },
+  "sdk": {
+    "name": "sdkwork-log-backend-sdk",
+    "version": "0.1.0",
+    "language": "typescript",
+    "sdkType": "backend",
+    "protocol": "http",
+    "outputPath": "E:\\sdkwork-space\\sdkwork-log\\sdks\\sdkwork-log-backend-sdk\\sdkwork-log-backend-sdk-typescript",
+    "packageName": "@sdkwork/log-backend-sdk"
+  },
+  "versioning": {
+    "resolvedVersion": "0.1.0",
+    "localVersions": []
+  },
+  "stats": {
+    "totalFiles": 3,
+    "models": 0,
+    "apis": 0,
+    "types": 0
+  },
+  "warnings": [],
+  "syncSummary": {
+    "dryRun": false,
+    "controlPlaneEnabled": true,
+    "writtenFiles": 3,
+    "skippedScaffoldFiles": 0,
+    "skippedUnchangedGeneratedFiles": 0,
+    "deletedGeneratedFiles": 0,
+    "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
+    "changeFingerprint": "e9d13f660cb680f6193657291ac524d1ccc96a15e91ab2c94420e1b97af87cf8",
+    "changes": {
+      "createdGeneratedFiles": [
+        "README.md",
+        "sdkwork-sdk.json"
+      ],
+      "updatedGeneratedFiles": [],
+      "unchangedGeneratedFiles": [],
+      "deletedGeneratedFiles": [],
+      "scaffoldedFiles": [
+        "custom/README.md"
+      ],
+      "preservedScaffoldFiles": [],
+      "backedUpFiles": []
+    },
+    "impact": {
+      "schemaVersion": 1,
+      "areas": [
+        "documentation",
+        "build-metadata",
+        "custom-scaffold"
+      ],
+      "details": [
+        {
+          "area": "documentation",
+          "paths": [
+            "README.md"
+          ]
+        },
+        {
+          "area": "build-metadata",
+          "paths": [
+            "sdkwork-sdk.json"
+          ]
+        },
+        {
+          "area": "custom-scaffold",
+          "paths": [
+            "custom/README.md"
+          ]
+        }
+      ],
+      "requiresVerification": false,
+      "summary": "Init only changed scaffold metadata and custom extension boundaries. Verification can be skipped until sdkgen generate creates a buildable SDK package."
+    },
+    "verificationPlan": {
+      "shouldRun": false,
+      "runPhase": "skip",
+      "summary": "Init only prepares scaffold metadata. No verification is required until sdkgen generate creates a buildable SDK package.",
+      "steps": []
+    },
+    "executionDecision": {
+      "schemaVersion": 1,
+      "riskLevel": "low",
+      "nextAction": "complete",
+      "requiresManualReview": false,
+      "applyRequiresExpectedFingerprint": false,
+      "summary": "SDK workspace scaffold has been initialized. Run sdkgen generate when an OpenAPI spec is ready.",
+      "reasons": [
+        "init-scaffold-applied",
+        "documentation",
+        "build-metadata",
+        "custom-scaffold"
+      ]
+    },
+    "backedUpFiles": [],
+    "preservedLegacyFiles": true
+  }
+}

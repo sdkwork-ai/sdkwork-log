@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "generator": "@sdkwork/sdk-generator",
+  "sdk": {
+    "name": "sdkwork-log-backend-sdk",
+    "version": "0.1.0",
+    "language": "typescript",
+    "sdkType": "backend",
+    "protocol": "http",
+    "packageName": "@sdkwork/log-backend-sdk"
+  },
+  "generatedFiles": [
+    {
+      "path": "README.md",
+      "sha256": "c46d118599a6bcdc8b96630e650ba7bc629151f6c415f414dfeba494757a2da9"
+    },
+    {
+      "path": "sdkwork-sdk.json",
+      "sha256": "504893cac952cceb63069721a3fbc315bad81f2e20ead3539642e7ed188889b4"
+    }
+  ],
+  "scaffoldFiles": [
+    "custom/README.md"
+  ],
+  "customRoots": [
+    "custom/"
+  ]
+}

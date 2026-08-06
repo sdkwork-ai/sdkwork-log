@@ -86,6 +86,35 @@ impl LogRequestListItem {
     }
 }
 
+/// Full request log row on the wire, including the redacted request/response
+/// bodies — served only by the detail endpoint so list responses stay lean.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LogRequestDetailItem {
+    #[serde(flatten)]
+    pub summary: LogRequestListItem,
+    /// Full redacted request body text (`[REDACTED]` replaces sensitive values).
+    pub request_body: Option<String>,
+    /// Full redacted response body text — same hygiene as `request_body`.
+    pub response_body: Option<String>,
+}
+
+impl LogRequestDetailItem {
+    pub fn from_row(row: RequestLogRow) -> Self {
+        Self {
+            request_body: row.record.request_body.clone(),
+            response_body: row.record.response_body.clone(),
+            summary: LogRequestListItem::from_row(row),
+        }
+    }
+}
+
+/// Resource envelope for the detail endpoint (`SdkWorkResourceResponse`).
+#[derive(Debug, Clone, Serialize)]
+pub struct LogRequestDetailEnvelope {
+    pub item: LogRequestDetailItem,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -113,6 +142,8 @@ mod tests {
                 failed_stage: None,
                 query_params: Some("page=1".to_owned()),
                 request_headers: None,
+                request_body: Some("{\"prompt\":\"hi\"}".to_owned()),
+                response_body: None,
             },
             created_at: 1_700_000_000,
             expires_at: Some(1_700_086_400),

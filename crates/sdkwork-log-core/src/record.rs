@@ -106,6 +106,14 @@ pub struct RequestLogRecord {
     pub query_params: Option<String>,
     /// Allow-listed safe request headers as a JSON object string.
     pub request_headers: Option<String>,
+    /// Full request body as captured text, with sensitive field values replaced
+    /// by `[REDACTED]` (`DATABASE_SPEC.md` §18: raw tokens, passwords, secrets,
+    /// and full sensitive payloads MUST NOT be stored). `None` when no body was
+    /// captured (empty, streaming-only, or capture disabled).
+    pub request_body: Option<String>,
+    /// Full response body as captured text, with the same redaction hygiene as
+    /// `request_body`.
+    pub response_body: Option<String>,
 }
 
 /// Read model: a persisted request log row with id and lifecycle timestamps.

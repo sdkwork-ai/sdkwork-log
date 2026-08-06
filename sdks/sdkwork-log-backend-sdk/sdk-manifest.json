@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "sdkFamily": "sdkwork-log-backend-sdk",
+  "sdkName": "sdkwork-log-backend-sdk",
+  "packageName": "@sdkwork/log-backend-sdk",
+  "transportPackageName": "sdkwork-log-backend-sdk-generated-typescript",
+  "typescript": {
+    "composedRoot": "sdkwork-log-backend-sdk-typescript",
+    "composedEntry": "sdkwork-log-backend-sdk-typescript/src/index.ts",
+    "transportRoot": "sdkwork-log-backend-sdk-typescript/generated/server-openapi",
+    "transportEntry": "sdkwork-log-backend-sdk-typescript/generated/server-openapi/src/index.ts"
+  },
+  "workspace": "sdkwork-log-backend-sdk",
+  "title": "SDKWork Log backend API SDK",
+  "apiVersion": "0.1.0",
+  "openapiVersion": "3.1.2",
+  "authoritySpec": "openapi/sdkwork-log-backend-sdk.openapi.json",
+  "generationInputSpec": "openapi/sdkwork-log-backend-sdk.openapi.json",
+  "derivedSpecs": {},
+  "sdkOwner": "sdkwork-log",
+  "apiAuthority": "sdkwork-log.backend-api",
+  "discoverySurface": {
+    "sdkTarget": "backend",
+    "apiPrefix": "/backend/v3/api",
+    "generatedProtocols": [
+      "http-openapi"
+    ],
+    "sdkClient": "SdkworkBackendClient"
+  },
+  "languages": [
+    "typescript"
+  ],
+  "generation": {
+    "standardProfile": "sdkwork-v3",
+    "fixedVersion": "0.1.0"
+  }
+}

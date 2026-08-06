@@ -64,8 +64,9 @@ impl RequestLogStore for SqlxRequestLogStore {
                     "INSERT INTO log_request \
                      (id, trace_id, request_id, tenant_id, user_id, api_surface, path, method, \
                       operation_id, service, environment, auth_mode, status_code, duration_ms, \
-                      error_code, failed_stage, query_params, request_headers, created_at, expires_at) \
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                      error_code, failed_stage, query_params, request_headers, request_body, \
+                      response_body, created_at, expires_at) \
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 )
                 .bind(&id)
                 .bind(&record.trace_id)
@@ -85,6 +86,8 @@ impl RequestLogStore for SqlxRequestLogStore {
                 .bind(&record.failed_stage)
                 .bind(&record.query_params)
                 .bind(&record.request_headers)
+                .bind(&record.request_body)
+                .bind(&record.response_body)
                 .bind(now)
                 .bind(expires_at)
                 .execute(pool)
@@ -99,9 +102,10 @@ impl RequestLogStore for SqlxRequestLogStore {
                     "INSERT INTO log_request \
                      (id, trace_id, request_id, tenant_id, user_id, api_surface, path, method, \
                       operation_id, service, environment, auth_mode, status_code, duration_ms, \
-                      error_code, failed_stage, query_params, request_headers, created_at, expires_at) \
+                      error_code, failed_stage, query_params, request_headers, request_body, \
+                      response_body, created_at, expires_at) \
                      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, \
-                             $15, $16, $17, $18, $19, $20)",
+                             $15, $16, $17, $18, $19, $20, $21, $22)",
                 )
                 .bind(&id)
                 .bind(&record.trace_id)
@@ -121,6 +125,8 @@ impl RequestLogStore for SqlxRequestLogStore {
                 .bind(&record.failed_stage)
                 .bind(&record.query_params)
                 .bind(&record.request_headers)
+                .bind(&record.request_body)
+                .bind(&record.response_body)
                 .bind(now)
                 .bind(expires_at)
                 .execute(pool)
@@ -141,6 +147,41 @@ impl RequestLogStore for SqlxRequestLogStore {
             LogStorePool::Sqlite(pool) => list_sqlite(pool, &query).await,
             #[cfg(feature = "postgres")]
             LogStorePool::Postgres(pool) => list_postgres(pool, &query).await,
+        }
+    }
+
+    async fn get_by_id(&self, id: &str) -> Result<Option<RequestLogRow>, RequestLogStoreError> {
+        match &self.pool {
+            #[cfg(feature = "sqlite")]
+            LogStorePool::Sqlite(pool) => {
+                let mut select = sqlx::QueryBuilder::<sqlx::Sqlite>::new(FULL_SELECT_COLUMNS);
+                select.push(" WHERE id = ").push_bind(id);
+                let row: Option<LogRow> = select
+                    .build_query_as()
+                    .fetch_optional(pool)
+                    .await
+                    .map_err(|error| {
+                        RequestLogStoreError::dependency(format!(
+                            "sqlite request log fetch: {error}"
+                        ))
+                    })?;
+                Ok(row.map(LogRow::into_request_log_row))
+            }
+            #[cfg(feature = "postgres")]
+            LogStorePool::Postgres(pool) => {
+                let mut select = sqlx::QueryBuilder::<sqlx::Postgres>::new(FULL_SELECT_COLUMNS);
+                select.push(" WHERE id = ").push_bind(id);
+                let row: Option<LogRow> = select
+                    .build_query_as()
+                    .fetch_optional(pool)
+                    .await
+                    .map_err(|error| {
+                        RequestLogStoreError::dependency(format!(
+                            "postgres request log fetch: {error}"
+                        ))
+                    })?;
+                Ok(row.map(LogRow::into_request_log_row))
+            }
         }
     }
 }
@@ -165,6 +206,8 @@ struct LogRow {
     failed_stage: Option<String>,
     query_params: Option<String>,
     request_headers: Option<String>,
+    request_body: Option<String>,
+    response_body: Option<String>,
     created_at: i64,
     expires_at: Option<i64>,
 }
@@ -191,6 +234,8 @@ impl LogRow {
                 failed_stage: self.failed_stage,
                 query_params: self.query_params,
                 request_headers: self.request_headers,
+                request_body: self.request_body,
+                response_body: self.response_body,
             },
             created_at: self.created_at,
             expires_at: self.expires_at,
@@ -198,9 +243,16 @@ impl LogRow {
     }
 }
 
-const SELECT_COLUMNS: &str = "SELECT id, trace_id, request_id, tenant_id, user_id, api_surface, \
-     path, method, operation_id, service, environment, auth_mode, status_code, duration_ms, \
-     error_code, failed_stage, query_params, request_headers, created_at, expires_at \
+const LIST_SELECT_COLUMNS: &str = "SELECT id, trace_id, request_id, tenant_id, user_id, \
+     api_surface, path, method, operation_id, service, environment, auth_mode, status_code, \
+     duration_ms, error_code, failed_stage, query_params, request_headers, \
+     NULL AS request_body, NULL AS response_body, created_at, expires_at \
+     FROM log_request";
+
+const FULL_SELECT_COLUMNS: &str = "SELECT id, trace_id, request_id, tenant_id, user_id, \
+     api_surface, path, method, operation_id, service, environment, auth_mode, status_code, \
+     duration_ms, error_code, failed_stage, query_params, request_headers, request_body, \
+     response_body, created_at, expires_at \
      FROM log_request";
 
 async fn list_sqlite(
@@ -211,7 +263,7 @@ async fn list_sqlite(
         "SELECT COUNT(*) FROM log_request WHERE 1=1",
     );
     let mut select =
-        sqlx::QueryBuilder::<sqlx::Sqlite>::new(SELECT_COLUMNS.to_owned() + " WHERE 1=1");
+        sqlx::QueryBuilder::<sqlx::Sqlite>::new(LIST_SELECT_COLUMNS.to_owned() + " WHERE 1=1");
     push_filters_sqlite(&mut count, query);
     push_filters_sqlite(&mut select, query);
     select.push(" ORDER BY created_at DESC, id DESC");
@@ -246,7 +298,7 @@ async fn list_postgres(
         "SELECT COUNT(*) FROM log_request WHERE 1=1",
     );
     let mut select =
-        sqlx::QueryBuilder::<sqlx::Postgres>::new(SELECT_COLUMNS.to_owned() + " WHERE 1=1");
+        sqlx::QueryBuilder::<sqlx::Postgres>::new(LIST_SELECT_COLUMNS.to_owned() + " WHERE 1=1");
     push_filters_postgres(&mut count, query);
     push_filters_postgres(&mut select, query);
     select.push(" ORDER BY created_at DESC, id DESC");

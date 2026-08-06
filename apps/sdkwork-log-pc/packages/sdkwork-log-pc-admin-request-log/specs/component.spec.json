@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.component.spec",
+  "component": {
+    "name": "sdkwork-log-pc-admin-request-log",
+    "displayName": "SDKWork Log PC Admin Request Log Surface",
+    "version": "0.1.0",
+    "type": "pc-admin-ui",
+    "root": "sdkwork-log-pc-admin-request-log",
+    "domain": "platform",
+    "capability": "logging",
+    "status": "implementing",
+    "languages": ["typescript", "react"],
+    "generated": false,
+    "private": false
+  },
+  "surface": "backend-admin",
+  "contracts": {
+    "backendSdkFamilies": ["sdkwork-log-backend-sdk"],
+    "apiSurfaces": ["backend-api"],
+    "extensionTraits": ["RequestLogAdmin"],
+    "requiredPermissions": ["log.tenant.read", "log.platform.read"]
+  }
+}

@@ -23,11 +23,22 @@ fn manifest_contract_matches_committed_routes_manifest() {
 
 #[test]
 fn manifest_declares_request_log_list_route() {
-    assert_eq!(1, ROUTES.len());
-    let route = &ROUTES[0];
-    assert_eq!(HttpMethod::Get, route.method);
-    assert_eq!(paths::request_logs::PATH, route.path);
-    assert_eq!("log.requestLogs.list", route.operation_id);
+    let list = ROUTES
+        .iter()
+        .find(|route| route.operation_id == "log.requestLogs.list")
+        .expect("list route");
+    assert_eq!(HttpMethod::Get, list.method);
+    assert_eq!(paths::request_logs::PATH, list.path);
+}
+
+#[test]
+fn manifest_declares_request_log_detail_route() {
+    let detail = ROUTES
+        .iter()
+        .find(|route| route.operation_id == "log.requestLogs.detail")
+        .expect("detail route");
+    assert_eq!(HttpMethod::Get, detail.method);
+    assert_eq!(paths::request_log_detail::PATH, detail.path);
 }
 
 fn authority_dir() -> std::path::PathBuf {
@@ -84,6 +95,7 @@ fn auth_mode_label(auth: sdkwork_web_contract::RouteAuth) -> &'static str {
         RouteAuth::IngressToken => "ingress-token",
         RouteAuth::OAuth => "oauth",
         RouteAuth::OpenApiFlexible => "open-api-flexible",
+        RouteAuth::OpenApiBearerFlexible => "open-api-bearer-flexible",
         RouteAuth::ApiKeyOrDualToken => "api-key-or-dual-token",
         RouteAuth::RefreshToken => "refresh-token",
         RouteAuth::AgentToken => "agent-token",
