@@ -7,6 +7,7 @@ members = [
     "crates/sdkwork-log-web-adapter",
     "crates/sdkwork-log-tower-adapter",
     "crates/sdkwork-routes-log-backend-api",
+    "crates/sdkwork-api-log-assembly",
 ]
 
 [workspace.package]
@@ -31,6 +32,9 @@ tracing = "0.1"
 
 sdkwork-log-core = { path = "crates/sdkwork-log-core" }
 sdkwork-log-store-sqlx = { path = "crates/sdkwork-log-store-sqlx", default-features = false }
+sdkwork-log-database-host = { path = "crates/sdkwork-log-database-host" }
+sdkwork-log-tower-adapter = { path = "crates/sdkwork-log-tower-adapter" }
+sdkwork-routes-log-backend-api = { path = "crates/sdkwork-routes-log-backend-api" }
 
 sdkwork-database-config = { path = "../sdkwork-database/crates/sdkwork-database-config" }
 sdkwork-database-lifecycle = { path = "../sdkwork-database/crates/sdkwork-database-lifecycle", default-features = false }
@@ -40,3 +44,4 @@ sdkwork-database-sqlx = { path = "../sdkwork-database/crates/sdkwork-database-sq
 sdkwork-utils-rust = { path = "../sdkwork-utils/packages/sdkwork-utils-rust" }
 sdkwork-web-core = { path = "../sdkwork-web-framework/crates/sdkwork-web-core" }
 sdkwork-web-contract = { path = "../sdkwork-web-framework/crates/sdkwork-web-contract" }
+sdkwork-web-bootstrap = { path = "../sdkwork-web-framework/crates/sdkwork-web-bootstrap" }

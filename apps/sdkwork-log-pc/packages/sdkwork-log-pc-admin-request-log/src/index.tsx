@@ -13,6 +13,7 @@ import {
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50];
 const SURFACE_OPTIONS: LogApiSurface[] = ['open-api', 'app-api', 'backend-api', 'internal-api', 'gateway-api', 'unknown'];
+const METHOD_OPTIONS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'];
 
 export function RequestLogAdmin(): React.ReactElement {
   const { t, i18n } = useTranslation();
@@ -29,6 +30,7 @@ export function RequestLogAdmin(): React.ReactElement {
   const [traceIdFilter, setTraceIdFilter] = useState('');
   const [requestIdFilter, setRequestIdFilter] = useState('');
   const [surfaceFilter, setSurfaceFilter] = useState<LogApiSurface | ''>('');
+  const [methodFilter, setMethodFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
 
   const [selected, setSelected] = useState<RequestLogDetail | null>(null);
@@ -42,6 +44,7 @@ export function RequestLogAdmin(): React.ReactElement {
         traceId: traceIdFilter || undefined,
         requestId: requestIdFilter || undefined,
         apiSurface: surfaceFilter || undefined,
+        method: methodFilter || undefined,
         status: statusFilter ? Number(statusFilter) : undefined,
         page,
         pageSize,
@@ -53,7 +56,7 @@ export function RequestLogAdmin(): React.ReactElement {
     } finally {
       setLoading(false);
     }
-  }, [traceIdFilter, requestIdFilter, surfaceFilter, statusFilter, page, pageSize]);
+  }, [traceIdFilter, requestIdFilter, surfaceFilter, methodFilter, statusFilter, page, pageSize]);
 
   useEffect(() => {
     void load();
@@ -71,6 +74,7 @@ export function RequestLogAdmin(): React.ReactElement {
     setTraceIdFilter('');
     setRequestIdFilter('');
     setSurfaceFilter('');
+    setMethodFilter('');
     setStatusFilter('');
     if (page !== 1) {
       setPage(1);
@@ -134,6 +138,18 @@ export function RequestLogAdmin(): React.ReactElement {
           {SURFACE_OPTIONS.map((surface) => (
             <option key={surface} value={surface}>
               {surface}
+            </option>
+          ))}
+        </select>
+        <select
+          value={methodFilter}
+          onChange={(event) => setMethodFilter(event.target.value)}
+          className={filterSelectClass}
+        >
+          <option value="">{t('admin.requestLog.filter.method')}: {t('admin.requestLog.filter.all')}</option>
+          {METHOD_OPTIONS.map((method) => (
+            <option key={method} value={method}>
+              {method}
             </option>
           ))}
         </select>
@@ -287,10 +303,10 @@ export function RequestLogAdmin(): React.ReactElement {
       {selected && (
         <div className="fixed inset-0 z-50 flex justify-end bg-black/40" onClick={() => setSelected(null)}>
           <div
-            className="h-full w-full max-w-2xl overflow-y-auto bg-white dark:bg-[#1a1a1a] p-5 shadow-2xl"
+            className="flex h-full w-full max-w-4xl flex-col overflow-hidden bg-white dark:bg-[#1a1a1a] p-5 shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="mb-4 flex items-center justify-between">
+            <div className="mb-4 flex shrink-0 items-center justify-between">
               <h2 className="text-base font-semibold text-slate-800 dark:text-white">
                 {t('admin.requestLog.detail.title')}
               </h2>
@@ -302,9 +318,13 @@ export function RequestLogAdmin(): React.ReactElement {
               </button>
             </div>
             {detailLoading ? (
-              <div className="py-8 text-center text-sm text-slate-400">{t('admin.requestLog.state.loading')}</div>
+              <div className="flex min-h-0 flex-1 items-center justify-center py-8 text-sm text-slate-400">
+                {t('admin.requestLog.state.loading')}
+              </div>
             ) : (
-              <RequestLogDetailPanel detail={selected} locale={locale} />
+              <div className="min-h-0 flex-1">
+                <RequestLogDetailPanel detail={selected} locale={locale} />
+              </div>
             )}
           </div>
         </div>

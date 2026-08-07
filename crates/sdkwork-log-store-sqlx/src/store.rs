@@ -80,9 +80,9 @@ impl RequestLogStore for SqlxRequestLogStore {
                 .bind(&record.service)
                 .bind(&record.environment)
                 .bind(&record.auth_mode)
-                .bind(record.status_code.map(i64::from))
-                .bind(record.duration_ms.map(|value| value as i64))
-                .bind(record.error_code.map(i64::from))
+                .bind(record.status_code.map(i32::from))
+                .bind(record.duration_ms.map(|value| value as i32))
+                .bind(record.error_code.map(i32::from))
                 .bind(&record.failed_stage)
                 .bind(&record.query_params)
                 .bind(&record.request_headers)
@@ -119,9 +119,9 @@ impl RequestLogStore for SqlxRequestLogStore {
                 .bind(&record.service)
                 .bind(&record.environment)
                 .bind(&record.auth_mode)
-                .bind(record.status_code.map(i64::from))
-                .bind(record.duration_ms.map(|value| value as i64))
-                .bind(record.error_code.map(i64::from))
+                .bind(record.status_code.map(i32::from))
+                .bind(record.duration_ms.map(|value| value as i32))
+                .bind(record.error_code.map(i32::from))
                 .bind(&record.failed_stage)
                 .bind(&record.query_params)
                 .bind(&record.request_headers)
@@ -200,9 +200,9 @@ struct LogRow {
     service: Option<String>,
     environment: Option<String>,
     auth_mode: Option<String>,
-    status_code: Option<i64>,
-    duration_ms: Option<i64>,
-    error_code: Option<i64>,
+    status_code: Option<i32>,
+    duration_ms: Option<i32>,
+    error_code: Option<i32>,
     failed_stage: Option<String>,
     query_params: Option<String>,
     request_headers: Option<String>,
@@ -230,7 +230,7 @@ impl LogRow {
                 auth_mode: self.auth_mode,
                 status_code: self.status_code.and_then(|value| u16::try_from(value).ok()),
                 duration_ms: self.duration_ms.and_then(|value| u64::try_from(value).ok()),
-                error_code: self.error_code.and_then(|value| i32::try_from(value).ok()),
+                error_code: self.error_code,
                 failed_stage: self.failed_stage,
                 query_params: self.query_params,
                 request_headers: self.request_headers,
@@ -255,6 +255,7 @@ const FULL_SELECT_COLUMNS: &str = "SELECT id, trace_id, request_id, tenant_id, u
      response_body, created_at, expires_at \
      FROM log_request";
 
+#[cfg(feature = "sqlite")]
 async fn list_sqlite(
     pool: &sqlx::SqlitePool,
     query: &RequestLogListQuery,
@@ -326,6 +327,7 @@ async fn list_postgres(
 
 /// Pushes optional equality/range filters. Conditions are appended only when the
 /// filter is present — a `NULL` bind would silently drop rows from comparisons.
+#[cfg(feature = "sqlite")]
 fn push_filters_sqlite(
     qb: &mut sqlx::QueryBuilder<sqlx::Sqlite>,
     query: &RequestLogListQuery,
@@ -342,6 +344,9 @@ fn push_filters_sqlite(
     if let Some(surface) = &query.api_surface {
         qb.push(" AND api_surface = ").push_bind(surface.as_str());
     }
+    if let Some(value) = &query.method {
+        qb.push(" AND method = ").push_bind(value.as_str());
+    }
     if let Some(value) = &query.operation_id {
         qb.push(" AND operation_id = ").push_bind(value);
     }
@@ -349,7 +354,7 @@ fn push_filters_sqlite(
         qb.push(" AND service = ").push_bind(value);
     }
     if let Some(status) = query.status_code {
-        qb.push(" AND status_code = ").push_bind(i64::from(status));
+        qb.push(" AND status_code = ").push_bind(i32::from(status));
     }
     if let Some(from) = query.created_from {
         qb.push(" AND created_at >= ").push_bind(from);
@@ -376,6 +381,9 @@ fn push_filters_postgres(
     if let Some(surface) = &query.api_surface {
         qb.push(" AND api_surface = ").push_bind(surface.as_str());
     }
+    if let Some(value) = &query.method {
+        qb.push(" AND method = ").push_bind(value.as_str());
+    }
     if let Some(value) = &query.operation_id {
         qb.push(" AND operation_id = ").push_bind(value);
     }
@@ -383,7 +391,7 @@ fn push_filters_postgres(
         qb.push(" AND service = ").push_bind(value);
     }
     if let Some(status) = query.status_code {
-        qb.push(" AND status_code = ").push_bind(i64::from(status));
+        qb.push(" AND status_code = ").push_bind(i32::from(status));
     }
     if let Some(from) = query.created_from {
         qb.push(" AND created_at >= ").push_bind(from);

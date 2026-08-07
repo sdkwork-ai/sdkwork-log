@@ -60,7 +60,7 @@
     },
     {
       "path": "src/api/log.ts",
-      "sha256": "c990b11a8f9e785fbaafc9a4684d8e00d191b75979c119727ed097bbd722ecb2"
+      "sha256": "6b840aa5d52aeb188128cbf3370bd6a8a653f886d87cc69dd8da1ccd58f2957a"
     },
     {
       "path": "src/api/paths.ts",

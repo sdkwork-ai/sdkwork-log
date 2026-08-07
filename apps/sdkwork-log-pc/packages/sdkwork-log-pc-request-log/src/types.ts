@@ -46,6 +46,8 @@ export interface RequestLogListFilters {
   traceId?: string;
   requestId?: string;
   apiSurface?: LogApiSurface;
+  /** HTTP method filter (for example `GET`). */
+  method?: string;
   operationId?: string;
   service?: string;
   status?: number;

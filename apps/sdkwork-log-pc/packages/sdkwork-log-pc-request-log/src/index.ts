@@ -5,6 +5,7 @@ export { RequestLogService } from './requestLogService';
 export {
   RequestLogTable,
   RequestLogBodyView,
+  RequestLogBodyTabs,
   RequestLogDetailPanel,
   formatLogTimestamp,
 } from './components';

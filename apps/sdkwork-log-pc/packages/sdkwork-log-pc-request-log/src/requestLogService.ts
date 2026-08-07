@@ -111,6 +111,7 @@ export class RequestLogService {
       traceId: filters.traceId || undefined,
       requestId: filters.requestId || undefined,
       apiSurface: filters.apiSurface || undefined,
+      method: filters.method || undefined,
       operationId: filters.operationId || undefined,
       service: filters.service || undefined,
       status: filters.status,

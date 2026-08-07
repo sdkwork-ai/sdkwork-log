@@ -171,6 +171,29 @@ async fn list_filters_by_service() {
 }
 
 #[tokio::test]
+async fn list_filters_by_method() {
+    let store = SqlxRequestLogStore::new_sqlite(test_pool().await);
+    let mut post = record("trace-1", "req-0", 200);
+    post.method = "POST".to_owned();
+    store.save(post).await.expect("save post");
+    let mut put = record("trace-2", "req-1", 200);
+    put.method = "PUT".to_owned();
+    store.save(put).await.expect("save put");
+    store.save(record("trace-3", "req-2", 200)).await.expect("save get");
+
+    let page = store
+        .list(RequestLogListQuery::default().with_method("PUT"))
+        .await
+        .expect("list");
+    assert_eq!(1, page.total);
+    assert_eq!("PUT", page.items[0].record.method);
+    assert_eq!("req-1", page.items[0].record.request_id);
+
+    let all = store.list(RequestLogListQuery::default()).await.expect("list");
+    assert_eq!(3, all.total);
+}
+
+#[tokio::test]
 async fn error_code_and_ranges_are_stored() {
     let store = SqlxRequestLogStore::new_sqlite(test_pool().await);
     let mut failed = record("trace-err", "req-err", 401);

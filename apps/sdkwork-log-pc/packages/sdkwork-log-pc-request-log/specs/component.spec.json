@@ -18,6 +18,6 @@
   "contracts": {
     "backendSdkFamilies": ["sdkwork-log-backend-sdk"],
     "apiSurfaces": ["backend-api"],
-    "extensionTraits": ["RequestLogService", "RequestLogTable", "RequestLogDetailPanel"]
+    "extensionTraits": ["RequestLogService", "RequestLogTable", "RequestLogBodyTabs", "RequestLogDetailPanel"]
   }
 }

@@ -9,6 +9,7 @@ use sdkwork_database_sqlx::{create_pool_from_config, DatabasePool};
 use std::path::PathBuf;
 use std::sync::Arc;
 
+#[derive(Clone)]
 pub struct LogDatabaseHost {
     pool: DatabasePool,
     module: Arc<DefaultDatabaseModule>,

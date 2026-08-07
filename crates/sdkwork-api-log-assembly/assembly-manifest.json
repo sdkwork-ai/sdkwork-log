@@ -1,0 +1,21 @@
+{
+  "kind": "sdkwork.api.assembly",
+  "schemaVersion": 1,
+  "applicationCode": "log",
+  "apiMode": "served",
+  "packageName": "sdkwork-api-log-assembly",
+  "crateDir": "crates/sdkwork-api-log-assembly",
+  "routeCrates": [
+    {
+      "packageName": "sdkwork-routes-log-backend-api",
+      "memberDir": "crates/sdkwork-routes-log-backend-api",
+      "libName": "sdkwork_routes_log_backend_api",
+      "surface": "backend-api",
+      "pathPrefix": null,
+      "mountOrder": 0,
+      "componentRef": "crates/sdkwork-routes-log-backend-api/specs/component.spec.json",
+      "routeManifestRef": "crates/sdkwork-routes-log-backend-api/src/manifest.rs#ROUTES",
+      "sourceRef": "crates/sdkwork-routes-log-backend-api/Cargo.toml"
+    }
+  ]
+}

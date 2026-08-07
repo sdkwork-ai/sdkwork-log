@@ -14,6 +14,8 @@ pub struct RequestLogListQuery {
     pub request_id: Option<String>,
     pub tenant_id: Option<String>,
     pub api_surface: Option<LogApiSurface>,
+    /// HTTP method filter (for example `GET`).
+    pub method: Option<String>,
     pub operation_id: Option<String>,
     pub service: Option<String>,
     pub status_code: Option<u16>,
@@ -40,6 +42,7 @@ impl RequestLogListQuery {
             request_id: None,
             tenant_id: None,
             api_surface: None,
+            method: None,
             operation_id: None,
             service: None,
             status_code: None,
@@ -62,6 +65,11 @@ impl RequestLogListQuery {
 
     pub fn with_tenant_id(mut self, tenant_id: impl Into<String>) -> Self {
         self.tenant_id = Some(tenant_id.into());
+        self
+    }
+
+    pub fn with_method(mut self, method: impl Into<String>) -> Self {
+        self.method = Some(method.into());
         self
     }
 

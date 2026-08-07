@@ -14,6 +14,8 @@ pub struct AdminLogListQuery {
     pub trace_id: Option<String>,
     pub request_id: Option<String>,
     pub api_surface: Option<String>,
+    /// HTTP method filter (for example `GET`).
+    pub method: Option<String>,
     pub operation_id: Option<String>,
     pub service: Option<String>,
     /// HTTP status code filter (`100..=599`).

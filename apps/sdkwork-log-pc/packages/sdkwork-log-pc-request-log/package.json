@@ -9,7 +9,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@sdkwork/log-backend-sdk": "workspace:*"
+    "@sdkwork/log-backend-sdk": "workspace:*",
+    "@monaco-editor/react": "^4.7.0",
+    "monaco-editor": "^0.55.1"
   },
   "peerDependencies": {
     "react": ">=18"

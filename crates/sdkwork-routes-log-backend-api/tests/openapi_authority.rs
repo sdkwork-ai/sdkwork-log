@@ -62,6 +62,7 @@ fn authority_openapi_document() -> Value {
                             "enum": ["open-api", "app-api", "backend-api", "internal-api", "gateway-api", "unknown"]
                         }),
                     ),
+                    ("method", json!({ "type": "string" })),
                     ("operation_id", json!({ "type": "string" })),
                     ("service", json!({ "type": "string" })),
                     (

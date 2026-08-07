@@ -13,6 +13,7 @@ export interface LogRequestLogsListParams {
   traceId?: string;
   requestId?: string;
   apiSurface?: 'open-api' | 'app-api' | 'backend-api' | 'internal-api' | 'gateway-api' | 'unknown';
+  method?: string;
   operationId?: string;
   service?: string;
   status?: number;
@@ -39,6 +40,7 @@ export class LogRequestLogsApi {
       { name: 'trace_id', value: params?.traceId, style: 'form', explode: true, allowReserved: false },
       { name: 'request_id', value: params?.requestId, style: 'form', explode: true, allowReserved: false },
       { name: 'api_surface', value: params?.apiSurface, style: 'form', explode: true, allowReserved: false },
+      { name: 'method', value: params?.method, style: 'form', explode: true, allowReserved: false },
       { name: 'operation_id', value: params?.operationId, style: 'form', explode: true, allowReserved: false },
       { name: 'service', value: params?.service, style: 'form', explode: true, allowReserved: false },
       { name: 'status', value: params?.status, style: 'form', explode: true, allowReserved: false },

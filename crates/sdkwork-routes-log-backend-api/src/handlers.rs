@@ -40,6 +40,7 @@ pub async fn list_request_logs(
                 .api_surface
                 .filter(|value| !value.is_empty())
                 .map(|value| LogApiSurface::parse(&value));
+            store_query.method = query.method.filter(|value| !value.is_empty());
             store_query.operation_id = query.operation_id.filter(|value| !value.is_empty());
             store_query.service = query.service.filter(|value| !value.is_empty());
             store_query.status_code = query.status.map(|value| value as u16);

@@ -388,6 +388,14 @@
           },
           {
             "in": "query",
+            "name": "method",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
             "name": "operation_id",
             "required": false,
             "schema": {
