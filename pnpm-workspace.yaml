@@ -3,3 +3,4 @@ packages:
   - "apps/sdkwork-log-pc/packages/*"
   - "apps/sdkwork-log-h5/packages/*"
   - "../sdkwork-sdk-commons/sdkwork-sdk-common-typescript"
+  - "../sdkwork-utils/packages/sdkwork-utils-typescript"

@@ -29,6 +29,15 @@ importers:
         specifier: ^8.1.5
         version: 8.2.0(@types/node@25.9.5)
 
+  ../sdkwork-utils/packages/sdkwork-utils-typescript:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.20.1
+      typescript:
+        specifier: ^5.7.2
+        version: 5.8.3
+
   apps/sdkwork-log-h5/packages/sdkwork-log-h5-request-log:
     dependencies:
       '@sdkwork/log-backend-sdk':
@@ -91,6 +100,9 @@ importers:
       '@sdkwork/sdk-common':
         specifier: workspace:*
         version: link:../../../../sdkwork-sdk-commons/sdkwork-sdk-common-typescript
+      '@sdkwork/utils':
+        specifier: workspace:*
+        version: link:../../../../sdkwork-utils/packages/sdkwork-utils-typescript
     devDependencies:
       '@types/node':
         specifier: 20.19.39
@@ -416,6 +428,9 @@ packages:
 
   '@types/node@20.19.39':
     resolution: {integrity: sha512-orrrD74MBUyK8jOAD/r0+lfa1I2MO6I+vAkmAWzMYbCcgrN4lCrmK52gRFQq/JRxfYPfonkr4b0jcY7Olqdqbw==}
+
+  '@types/node@22.20.1':
+    resolution: {integrity: sha512-EANqOCF9QFyra+4pfxUcX9STKJpCLjMbObVzljIJomAWSnuSIEAvyzEU53GaajbXJEgdh0iEcPL+DGvpUd4k1Q==}
 
   '@types/node@25.9.5':
     resolution: {integrity: sha512-OScDchr2fwuUmWdf4kZ9h7PcJiYDVInhJizG/biAq3cAvqwYktuy/TYGGdZNMtNTFUP7rnb0NU4TUdm82kt4Rg==}
@@ -1156,6 +1171,10 @@ snapshots:
   '@types/json-schema@7.0.15': {}
 
   '@types/node@20.19.39':
+    dependencies:
+      undici-types: 6.21.0
+
+  '@types/node@22.20.1':
     dependencies:
       undici-types: 6.21.0
 
