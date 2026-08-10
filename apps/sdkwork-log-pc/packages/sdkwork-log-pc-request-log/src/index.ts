@@ -9,6 +9,7 @@ export {
   RequestLogDetailPanel,
   formatLogTimestamp,
 } from './components';
+export { extractUserAgent, detectUserAgentOs, detectUserAgentClient } from './user-agent';
 export type {
   LogApiSurface,
   RequestLogItem,

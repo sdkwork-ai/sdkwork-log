@@ -83,6 +83,10 @@ pub struct RequestLogRecord {
     /// Redacted route template, e.g. `/app/v3/api/products/{productId}` — never
     /// raw paths with user/tenant/object identifiers.
     pub path: String,
+    /// Capture-side retention declaration resolved from the route policy
+    /// (`None` = the store's default TTL applies). `Permanent` rows are
+    /// persisted with `expires_at = NULL` and never purged.
+    pub retention: Option<crate::retention::LogRetention>,
     pub method: String,
     pub operation_id: Option<String>,
     /// Service name supplied by the wiring application

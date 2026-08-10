@@ -19,6 +19,10 @@ pub struct RequestLogListQuery {
     pub operation_id: Option<String>,
     pub service: Option<String>,
     pub status_code: Option<u16>,
+    /// Inclusive lower bound on `duration_ms` (milliseconds).
+    pub duration_min: Option<i64>,
+    /// Inclusive upper bound on `duration_ms` (milliseconds).
+    pub duration_max: Option<i64>,
     /// Inclusive lower bound on `created_at` (epoch seconds).
     pub created_from: Option<i64>,
     /// Inclusive upper bound on `created_at` (epoch seconds).
@@ -46,6 +50,8 @@ impl RequestLogListQuery {
             operation_id: None,
             service: None,
             status_code: None,
+            duration_min: None,
+            duration_max: None,
             created_from: None,
             created_to: None,
             page: page.max(1),
@@ -90,6 +96,16 @@ impl RequestLogListQuery {
 
     pub fn with_status_code(mut self, status_code: u16) -> Self {
         self.status_code = Some(status_code);
+        self
+    }
+
+    pub fn with_duration_min(mut self, duration_min: i64) -> Self {
+        self.duration_min = Some(duration_min);
+        self
+    }
+
+    pub fn with_duration_max(mut self, duration_max: i64) -> Self {
+        self.duration_max = Some(duration_max);
         self
     }
 

@@ -69,6 +69,8 @@ fn authority_openapi_document() -> Value {
                         "status",
                         json!({ "type": "integer", "minimum": 100, "maximum": 599 }),
                     ),
+                    ("duration_min", json!({ "type": "string", "pattern": "^[0-9]+$" })),
+                    ("duration_max", json!({ "type": "string", "pattern": "^[0-9]+$" })),
                     ("created_from", json!({ "type": "string", "pattern": "^[0-9]+$" })),
                     ("created_to", json!({ "type": "string", "pattern": "^[0-9]+$" })),
                 ];

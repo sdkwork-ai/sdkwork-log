@@ -29,6 +29,27 @@ pub async fn list_request_logs(
                     ));
                 }
             }
+            if let Some(min) = query.duration_min {
+                if min < 0 {
+                    return Err(ApiProblem::bad_request(
+                        "duration_min must be >= 0",
+                    ));
+                }
+            }
+            if let Some(max) = query.duration_max {
+                if max < 0 {
+                    return Err(ApiProblem::bad_request(
+                        "duration_max must be >= 0",
+                    ));
+                }
+            }
+            if let (Some(min), Some(max)) = (query.duration_min, query.duration_max) {
+                if min > max {
+                    return Err(ApiProblem::bad_request(
+                        "duration_min must be <= duration_max",
+                    ));
+                }
+            }
             let params = validated_offset_params(query.page, query.page_size, query.limit)
                 .map_err(|code| ApiProblem::bad_request(code.title()))?;
 
@@ -44,6 +65,8 @@ pub async fn list_request_logs(
             store_query.operation_id = query.operation_id.filter(|value| !value.is_empty());
             store_query.service = query.service.filter(|value| !value.is_empty());
             store_query.status_code = query.status.map(|value| value as u16);
+            store_query.duration_min = query.duration_min;
+            store_query.duration_max = query.duration_max;
             store_query.created_from = query.created_from;
             store_query.created_to = query.created_to;
 

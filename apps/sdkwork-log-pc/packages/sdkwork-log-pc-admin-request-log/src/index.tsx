@@ -3,6 +3,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  detectUserAgentClient,
+  detectUserAgentOs,
+  extractUserAgent,
   formatLogTimestamp,
   RequestLogDetailPanel,
   RequestLogService,
@@ -14,6 +17,50 @@ import {
 const PAGE_SIZE_OPTIONS = [10, 20, 50];
 const SURFACE_OPTIONS: LogApiSurface[] = ['open-api', 'app-api', 'backend-api', 'internal-api', 'gateway-api', 'unknown'];
 const METHOD_OPTIONS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'];
+
+/** Preset duration buckets offered by the filter bar (milliseconds). */
+const DURATION_OPTIONS = [
+  { value: 'lt100', labelKey: 'admin.requestLog.filter.durationLt100' },
+  { value: '100-500', labelKey: 'admin.requestLog.filter.duration100to500' },
+  { value: '500-1000', labelKey: 'admin.requestLog.filter.duration500to1000' },
+  { value: '1000-5000', labelKey: 'admin.requestLog.filter.duration1sto5s' },
+  { value: 'gt5000', labelKey: 'admin.requestLog.filter.durationGt5s' },
+] as const;
+
+type DurationFilterValue = '' | (typeof DURATION_OPTIONS)[number]['value'];
+
+/** Maps a preset bucket to the inclusive duration range sent to the API. */
+function resolveDurationRange(value: DurationFilterValue): { durationMin?: string; durationMax?: string } {
+  switch (value) {
+    case 'lt100':
+      return { durationMax: '100' };
+    case '100-500':
+      return { durationMin: '100', durationMax: '500' };
+    case '500-1000':
+      return { durationMin: '500', durationMax: '1000' };
+    case '1000-5000':
+      return { durationMin: '1000', durationMax: '5000' };
+    case 'gt5000':
+      return { durationMin: '5000' };
+    default:
+      return {};
+  }
+}
+
+type I18nKey = string;
+type Translate = (key: I18nKey, options?: Record<string, unknown>) => string;
+
+/** Renders the row's retention from its lifecycle timestamps: a `null`
+ * `expiresAt` means the row is kept forever; otherwise the declared days are
+ * derived from `expiresAt - createdAt`. */
+function retentionText(createdAt: string, expiresAt: string | null | undefined, t: Translate): string {
+  if (!expiresAt) {
+    return t('admin.requestLog.retention.permanent');
+  }
+  const seconds = Number(expiresAt) - Number(createdAt);
+  const days = Math.max(1, Math.ceil(seconds / 86_400));
+  return t('admin.requestLog.retention.days', { days });
+}
 
 export function RequestLogAdmin(): React.ReactElement {
   const { t, i18n } = useTranslation();
@@ -32,6 +79,7 @@ export function RequestLogAdmin(): React.ReactElement {
   const [surfaceFilter, setSurfaceFilter] = useState<LogApiSurface | ''>('');
   const [methodFilter, setMethodFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [durationFilter, setDurationFilter] = useState<DurationFilterValue>('');
 
   const [selected, setSelected] = useState<RequestLogDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -40,12 +88,15 @@ export function RequestLogAdmin(): React.ReactElement {
     setLoading(true);
     setLoadError(null);
     try {
+      const duration = resolveDurationRange(durationFilter);
       const result = await RequestLogService.list({
         traceId: traceIdFilter || undefined,
         requestId: requestIdFilter || undefined,
         apiSurface: surfaceFilter || undefined,
         method: methodFilter || undefined,
         status: statusFilter ? Number(statusFilter) : undefined,
+        durationMin: duration.durationMin,
+        durationMax: duration.durationMax,
         page,
         pageSize,
       });
@@ -56,7 +107,7 @@ export function RequestLogAdmin(): React.ReactElement {
     } finally {
       setLoading(false);
     }
-  }, [traceIdFilter, requestIdFilter, surfaceFilter, methodFilter, statusFilter, page, pageSize]);
+  }, [traceIdFilter, requestIdFilter, surfaceFilter, methodFilter, statusFilter, durationFilter, page, pageSize]);
 
   useEffect(() => {
     void load();
@@ -76,6 +127,7 @@ export function RequestLogAdmin(): React.ReactElement {
     setSurfaceFilter('');
     setMethodFilter('');
     setStatusFilter('');
+    setDurationFilter('');
     if (page !== 1) {
       setPage(1);
       return;
@@ -163,6 +215,18 @@ export function RequestLogAdmin(): React.ReactElement {
           placeholder={t('admin.requestLog.filter.status')}
           className={filterInputClass}
         />
+        <select
+          value={durationFilter}
+          onChange={(event) => setDurationFilter(event.target.value as DurationFilterValue)}
+          className={filterSelectClass}
+        >
+          <option value="">{t('admin.requestLog.filter.duration')}: {t('admin.requestLog.filter.all')}</option>
+          {DURATION_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {t(option.labelKey)}
+            </option>
+          ))}
+        </select>
         <div className="ml-auto flex shrink-0 items-center gap-2">
           <button
             onClick={handleSearch}
@@ -191,19 +255,23 @@ export function RequestLogAdmin(): React.ReactElement {
               <th className="px-4 py-3 font-medium">{t('admin.requestLog.col.status')}</th>
               <th className="px-4 py-3 font-medium">{t('admin.requestLog.col.duration')}</th>
               <th className="px-4 py-3 font-medium">{t('admin.requestLog.col.service')}</th>
+              <th className="px-4 py-3 font-medium">{t('admin.requestLog.col.agent')}</th>
+              <th className="px-4 py-3 font-medium">{t('admin.requestLog.col.terminal')}</th>
+              <th className="px-4 py-3 font-medium">{t('admin.requestLog.col.browser')}</th>
+              <th className="px-4 py-3 font-medium">{t('admin.requestLog.col.retention')}</th>
               <th className="px-4 py-3 font-medium">{t('admin.requestLog.col.traceId')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-white/5 text-slate-700 dark:text-slate-300 text-xs">
             {loading ? (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-slate-400">
+                <td colSpan={12} className="px-4 py-8 text-center text-slate-400">
                   {t('admin.requestLog.state.loading')}
                 </td>
               </tr>
             ) : loadError ? (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center">
+                <td colSpan={12} className="px-4 py-8 text-center">
                   <div className="text-rose-600 dark:text-rose-400">{t('admin.requestLog.state.error')}</div>
                   <div className="mt-1 text-slate-400">{loadError}</div>
                   <button
@@ -216,42 +284,51 @@ export function RequestLogAdmin(): React.ReactElement {
               </tr>
             ) : items.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-slate-400">
+                <td colSpan={12} className="px-4 py-8 text-center text-slate-400">
                   {t('admin.requestLog.state.empty')}
                   <div className="mt-1 text-xs text-slate-500">{t('admin.requestLog.state.emptyDesc')}</div>
                 </td>
               </tr>
             ) : (
-              items.map((item) => (
-                <tr
-                  key={item.id}
-                  onClick={() => void openDetail(item)}
-                  className="cursor-pointer hover:bg-slate-50 dark:hover:bg-white/[0.02]"
-                >
-                  <td className="px-4 py-2.5 font-mono">{formatLogTimestamp(item.createdAt, locale)}</td>
-                  <td className="px-4 py-2.5 font-mono">{item.apiSurface}</td>
-                  <td className="px-4 py-2.5 font-mono">{item.method}</td>
-                  <td className="px-4 py-2.5 font-mono max-w-[320px] truncate" title={item.path}>
-                    {item.path}
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <span
-                      className={`inline-flex px-2 py-0.5 rounded-full border font-medium ${
-                        item.statusCode !== null && item.statusCode !== undefined && item.statusCode >= 400
-                          ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-500/20'
-                          : 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20'
-                      }`}
-                    >
-                      {item.statusCode ?? '-'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2.5 font-mono">{item.durationMs ? `${item.durationMs} ms` : '-'}</td>
-                  <td className="px-4 py-2.5 font-mono">{item.service ?? '-'}</td>
-                  <td className="px-4 py-2.5 font-mono max-w-[200px] truncate" title={item.traceId}>
-                    {item.traceId}
-                  </td>
-                </tr>
-              ))
+              items.map((item) => {
+                const userAgent = extractUserAgent(item.requestHeaders);
+                return (
+                  <tr
+                    key={item.id}
+                    onClick={() => void openDetail(item)}
+                    className="cursor-pointer hover:bg-slate-50 dark:hover:bg-white/[0.02]"
+                  >
+                    <td className="px-4 py-2.5 font-mono">{formatLogTimestamp(item.createdAt, locale)}</td>
+                    <td className="px-4 py-2.5 font-mono">{item.apiSurface}</td>
+                    <td className="px-4 py-2.5 font-mono">{item.method}</td>
+                    <td className="px-4 py-2.5 font-mono max-w-[320px] truncate" title={item.path}>
+                      {item.path}
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <span
+                        className={`inline-flex px-2 py-0.5 rounded-full border font-medium ${
+                          item.statusCode !== null && item.statusCode !== undefined && item.statusCode >= 400
+                            ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-500/20'
+                            : 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20'
+                        }`}
+                      >
+                        {item.statusCode ?? '-'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2.5 font-mono">{item.durationMs ? `${item.durationMs} ms` : '-'}</td>
+                    <td className="px-4 py-2.5 font-mono">{item.service ?? '-'}</td>
+                    <td className="px-4 py-2.5 font-mono max-w-[240px] truncate" title={userAgent ?? undefined}>
+                      {userAgent ?? '-'}
+                    </td>
+                    <td className="px-4 py-2.5">{userAgent ? detectUserAgentOs(userAgent) : '-'}</td>
+                    <td className="px-4 py-2.5">{userAgent ? detectUserAgentClient(userAgent) : '-'}</td>
+                    <td className="px-4 py-2.5">{retentionText(item.createdAt, item.expiresAt, t)}</td>
+                    <td className="px-4 py-2.5 font-mono max-w-[200px] truncate" title={item.traceId}>
+                      {item.traceId}
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

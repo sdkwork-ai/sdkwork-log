@@ -15,9 +15,6 @@ mod store;
 pub use pool::LogStorePool;
 pub use store::{SqlxRequestLogStore, DEFAULT_LOG_TTL_SECS};
 
-use sdkwork_database_config::{DatabaseConfig, DatabaseEngine, DeploymentMode};
-use sdkwork_database_sqlx::PoolBuilder;
-
 /// Epoch seconds now (wall-clock); storage timestamps use `INTEGER`/`BIGINT`
 /// epoch seconds consistent with the web framework webstore tables.
 pub fn now_epoch_secs() -> i64 {
@@ -34,6 +31,8 @@ pub async fn connect_sqlite(
     database_url: &str,
     max_connections: u32,
 ) -> Result<sqlx::SqlitePool, sqlx::Error> {
+    use sdkwork_database_config::{DatabaseConfig, DatabaseEngine, DeploymentMode};
+    use sdkwork_database_sqlx::PoolBuilder;
     let mut config = DatabaseConfig {
         engine: DatabaseEngine::Sqlite,
         url: database_url.to_string(),

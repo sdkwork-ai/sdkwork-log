@@ -20,6 +20,10 @@ pub struct AdminLogListQuery {
     pub service: Option<String>,
     /// HTTP status code filter (`100..=599`).
     pub status: Option<i32>,
+    /// Inclusive lower bound on `duration_ms` (milliseconds).
+    pub duration_min: Option<i64>,
+    /// Inclusive upper bound on `duration_ms` (milliseconds).
+    pub duration_max: Option<i64>,
     /// Inclusive `created_at` lower bound (epoch seconds).
     pub created_from: Option<i64>,
     /// Inclusive `created_at` upper bound (epoch seconds).
@@ -133,6 +137,7 @@ mod tests {
                 user_id: None,
                 api_surface: LogApiSurface::BackendApi,
                 path: "/backend/v3/api/log/request_logs".to_owned(),
+                retention: None,
                 method: "GET".to_owned(),
                 operation_id: None,
                 service: Some("svc-1".to_owned()),

@@ -2,13 +2,13 @@
 
 use crate::capture::CaptureBody;
 use crate::context::build_record_metadata;
-use crate::{PathTemplateResolver, StoreHandle, TenantContextResolver};
+use crate::{ApiSurfaceResolver, LogRetentionPolicy, PathTemplateResolver, StoreHandle, TenantContextResolver};
 use axum::body::Body as AxumBody;
 use bytes::Bytes;
 use http::Request;
 use http_body::Body as HttpBody;
 use http_body_util::BodyExt;
-use sdkwork_log_core::{redact_body_text, truncate_body_text};
+use sdkwork_log_core::{redact_body_text, truncate_body_text, LogApiSurface};
 use std::pin::Pin;
 use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll};
@@ -28,6 +28,8 @@ pub struct RequestLoggingLayer {
     max_body_bytes: usize,
     tenant_resolver: Option<Arc<TenantContextResolver>>,
     path_template_resolver: Option<Arc<PathTemplateResolver>>,
+    api_surface_resolver: Option<Arc<ApiSurfaceResolver>>,
+    retention_policy: Option<Arc<LogRetentionPolicy>>,
 }
 
 impl RequestLoggingLayer {
@@ -39,6 +41,8 @@ impl RequestLoggingLayer {
             max_body_bytes: crate::DEFAULT_MAX_BODY_BUFFER_BYTES,
             tenant_resolver: None,
             path_template_resolver: None,
+            api_surface_resolver: None,
+            retention_policy: None,
         }
     }
 
@@ -74,6 +78,26 @@ impl RequestLoggingLayer {
         self.path_template_resolver = Some(Arc::new(resolver));
         self
     }
+
+    /// Overrides the API-surface classification for request paths. Defaults to
+    /// [`crate::infer_api_surface`]; hosts with non-canonical surface paths
+    /// (for example open-api capability routes) inject their own resolver.
+    pub fn with_api_surface_resolver<F>(mut self, resolver: F) -> Self
+    where
+        F: Fn(&str) -> LogApiSurface + Send + Sync + 'static,
+    {
+        self.api_surface_resolver = Some(Arc::new(resolver));
+        self
+    }
+
+    /// Sets the request-log retention policy: each request's captured path is
+    /// resolved against it and the row's `expires_at` follows the matched
+    /// retention (`Permanent` rows are never purged; undeclared paths use the
+    /// policy default of 1 month).
+    pub fn with_retention_policy(mut self, policy: LogRetentionPolicy) -> Self {
+        self.retention_policy = Some(Arc::new(policy));
+        self
+    }
 }
 
 impl<S> Layer<S> for RequestLoggingLayer {
@@ -87,6 +111,8 @@ impl<S> Layer<S> for RequestLoggingLayer {
             max_body_bytes: self.max_body_bytes,
             tenant_resolver: self.tenant_resolver.clone(),
             path_template_resolver: self.path_template_resolver.clone(),
+            api_surface_resolver: self.api_surface_resolver.clone(),
+            retention_policy: self.retention_policy.clone(),
         }
     }
 }
@@ -101,6 +127,8 @@ pub struct RequestLoggingMiddleware<S> {
     max_body_bytes: usize,
     tenant_resolver: Option<Arc<TenantContextResolver>>,
     path_template_resolver: Option<Arc<PathTemplateResolver>>,
+    api_surface_resolver: Option<Arc<ApiSurfaceResolver>>,
+    retention_policy: Option<Arc<LogRetentionPolicy>>,
 }
 
 impl<S> Clone for RequestLoggingMiddleware<S>
@@ -115,6 +143,8 @@ where
             max_body_bytes: self.max_body_bytes,
             tenant_resolver: self.tenant_resolver.clone(),
             path_template_resolver: self.path_template_resolver.clone(),
+            api_surface_resolver: self.api_surface_resolver.clone(),
+            retention_policy: self.retention_policy.clone(),
         }
     }
 }
@@ -161,7 +191,11 @@ where
             &self.service,
             &self.tenant_resolver,
             &self.path_template_resolver,
+            &self.api_surface_resolver,
         );
+        if let Some(policy) = &self.retention_policy {
+            record.retention = Some(policy.resolve(&record.path));
+        }
 
         Box::pin(async move {
             // Buffer the request body only when its declared size is bounded

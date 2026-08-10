@@ -12,6 +12,13 @@ pub use bootstrap::{
     assemble_backend_business_router_with_pool, log_route_manifest, ApiAssembly,
     BusinessRouterAssembly, LogBackendAssembly, LogServiceHost,
 };
+// Retention policy value types and the surface resolver signature are part of
+// the assembly's public contract: hosts build policies and resolver closures
+// without importing the log foundation crates directly.
+pub use sdkwork_log_core::{
+    DEFAULT_LOG_RETENTION_DAYS, LogApiSurface, LogRetention, LogRetentionPolicy, LogRetentionRule,
+};
+pub use sdkwork_log_tower_adapter::ApiSurfaceResolver;
 
 pub fn assembly_route_count() -> usize {
     generated::ROUTE_CRATE_COUNT

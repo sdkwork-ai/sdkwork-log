@@ -29,7 +29,8 @@
 
 use async_trait::async_trait;
 use sdkwork_log_core::{
-    capture_safe_headers, redact_query_params, LogApiSurface, RequestLogRecord, RequestLogStore,
+    capture_safe_headers, redact_query_params, LogApiSurface, LogRetentionPolicy,
+    RequestLogRecord, RequestLogStore,
 };
 use sdkwork_web_core::{
     problem::redact_path_template, trace::trace_id_from_traceparent, WebAuthMode, WebCallInterceptor,
@@ -49,6 +50,7 @@ where
 {
     store: Arc<dyn RequestLogStore>,
     service: Option<String>,
+    retention_policy: Option<Arc<LogRetentionPolicy>>,
     _runtime: PhantomData<R>,
 }
 
@@ -60,6 +62,7 @@ where
         Self {
             store,
             service: None,
+            retention_policy: None,
             _runtime: PhantomData,
         }
     }
@@ -68,6 +71,15 @@ where
     /// `OBSERVABILITY_SPEC.md` §2).
     pub fn with_service(mut self, service: impl Into<String>) -> Self {
         self.service = Some(service.into());
+        self
+    }
+
+    /// Sets the request-log retention policy: the captured path is resolved
+    /// against it and the row's `expires_at` follows the matched retention
+    /// (`Permanent` rows are never purged; undeclared paths use the policy
+    /// default of 1 month).
+    pub fn with_retention_policy(mut self, policy: LogRetentionPolicy) -> Self {
+        self.retention_policy = Some(Arc::new(policy));
         self
     }
 }
@@ -114,12 +126,15 @@ where
         response: &mut axum::response::Response,
         runtime: &WebCallRuntime<R>,
     ) -> Result<(), WebFrameworkError> {
-        let record = request_log_record_from_state(
+        let mut record = request_log_record_from_state(
             state,
             response.status().as_u16(),
             self.service.as_deref(),
             web_environment_str(&runtime.profile.environment),
         );
+        if let Some(policy) = &self.retention_policy {
+            record.retention = Some(policy.resolve(&record.path));
+        }
         self.store.save(record).await.map_err(|error| {
             tracing::warn!(
                 request_id = ?state.request_id_value(),
@@ -208,6 +223,7 @@ pub fn request_log_record_from_state(
             sdkwork_web_core::WebApiSurface::Unknown => LogApiSurface::Unknown,
         },
         path: redact_path_template(&state.path),
+        retention: None,
         method: state.method.clone(),
         operation_id: state.operation_id.clone(),
         service: service.map(str::to_owned),

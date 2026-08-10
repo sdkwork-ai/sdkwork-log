@@ -5,14 +5,15 @@ use crate::purge::ThrottledPurge;
 use crate::now_epoch_secs;
 use async_trait::async_trait;
 use sdkwork_log_core::{
-    new_request_log_id, LogApiSurface, RequestLogListQuery, RequestLogPage, RequestLogRecord,
-    RequestLogRow, RequestLogStore, RequestLogStoreError,
+    new_request_log_id, LogApiSurface, LogRetention, RequestLogListQuery, RequestLogPage,
+    RequestLogRecord, RequestLogRow, RequestLogStore, RequestLogStoreError,
 };
 use std::sync::Arc;
 
-/// Default TTL for request log rows (90 days), matching the web framework audit
-/// store (`WEB_FRAMEWORK_STANDARD.md`).
-pub const DEFAULT_LOG_TTL_SECS: i64 = 90 * 24 * 60 * 60;
+/// Default TTL for request log rows without a route retention declaration
+/// (1 month). Routes may override via the web-framework `log_retention`
+/// annotation, and `Permanent` rows never expire.
+pub const DEFAULT_LOG_TTL_SECS: i64 = 30 * 24 * 60 * 60;
 
 /// SQLx-backed request log store supporting SQLite and PostgreSQL.
 pub struct SqlxRequestLogStore {
@@ -53,7 +54,14 @@ impl RequestLogStore for SqlxRequestLogStore {
         // Throttled purge fails silently (best-effort).
         let _ = self.purge.maybe_run().await;
         let now = now_epoch_secs();
-        let expires_at = now + self.ttl_secs;
+        // Route-declared retention wins; `Permanent` rows are stored with a
+        // NULL `expires_at` (purge skips them). Undeclared rows use the store
+        // default TTL.
+        let expires_at = match record.retention {
+            Some(LogRetention::Permanent) => None,
+            Some(LogRetention::Days(days)) => Some(now.saturating_add(days.saturating_mul(86_400))),
+            None => Some(now + self.ttl_secs),
+        };
         let id = new_request_log_id();
         let api_surface = record.api_surface.as_str();
 
@@ -82,7 +90,7 @@ impl RequestLogStore for SqlxRequestLogStore {
                 .bind(&record.auth_mode)
                 .bind(record.status_code.map(i32::from))
                 .bind(record.duration_ms.map(|value| value as i32))
-                .bind(record.error_code.map(i32::from))
+                .bind(record.error_code)
                 .bind(&record.failed_stage)
                 .bind(&record.query_params)
                 .bind(&record.request_headers)
@@ -121,7 +129,7 @@ impl RequestLogStore for SqlxRequestLogStore {
                 .bind(&record.auth_mode)
                 .bind(record.status_code.map(i32::from))
                 .bind(record.duration_ms.map(|value| value as i32))
-                .bind(record.error_code.map(i32::from))
+                .bind(record.error_code)
                 .bind(&record.failed_stage)
                 .bind(&record.query_params)
                 .bind(&record.request_headers)
@@ -223,6 +231,7 @@ impl LogRow {
                 user_id: self.user_id,
                 api_surface: LogApiSurface::parse(&self.api_surface),
                 path: self.path,
+                retention: None,
                 method: self.method,
                 operation_id: self.operation_id,
                 service: self.service,
@@ -356,6 +365,12 @@ fn push_filters_sqlite(
     if let Some(status) = query.status_code {
         qb.push(" AND status_code = ").push_bind(i32::from(status));
     }
+    if let Some(min) = query.duration_min {
+        qb.push(" AND duration_ms >= ").push_bind(min);
+    }
+    if let Some(max) = query.duration_max {
+        qb.push(" AND duration_ms <= ").push_bind(max);
+    }
     if let Some(from) = query.created_from {
         qb.push(" AND created_at >= ").push_bind(from);
     }
@@ -392,6 +407,12 @@ fn push_filters_postgres(
     }
     if let Some(status) = query.status_code {
         qb.push(" AND status_code = ").push_bind(i32::from(status));
+    }
+    if let Some(min) = query.duration_min {
+        qb.push(" AND duration_ms >= ").push_bind(min);
+    }
+    if let Some(max) = query.duration_max {
+        qb.push(" AND duration_ms <= ").push_bind(max);
     }
     if let Some(from) = query.created_from {
         qb.push(" AND created_at >= ").push_bind(from);

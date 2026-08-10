@@ -422,6 +422,24 @@
           },
           {
             "in": "query",
+            "name": "duration_min",
+            "required": false,
+            "schema": {
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "duration_max",
+            "required": false,
+            "schema": {
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
             "name": "created_from",
             "required": false,
             "schema": {

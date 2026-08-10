@@ -129,6 +129,63 @@ async fn list_rows_omit_bodies_and_detail_returns_them() {
 }
 
 #[tokio::test]
+async fn retention_policy_drives_expires_at() {
+    let Some(store) = test_store().await else {
+        eprintln!("SKIP: SDKWORK_DATABASE_TEST_POSTGRES_URL is not configured");
+        return;
+    };
+    use sdkwork_log_core::{LogRetention, LogRetentionPolicy, LogRetentionRule};
+    let policy = LogRetentionPolicy {
+        default_retention: LogRetention::Days(30),
+        rules: vec![LogRetentionRule {
+            path_prefix: "/backend/v3/api/billing".to_owned(),
+            retention: LogRetention::Permanent,
+        }],
+    };
+    let router = Router::new()
+        .route(
+            "/backend/v3/api/billing/records",
+            get(|| async { "ok" }),
+        )
+        .route(
+            "/backend/v3/api/log/echo",
+            get(|| async { "ok" }),
+        )
+        .layer(
+            RequestLoggingLayer::new(Arc::clone(&store))
+                .with_service("retention-test")
+                .with_retention_policy(policy),
+        );
+
+    router
+        .clone()
+        .oneshot(Request::builder().uri("/backend/v3/api/billing/records").body(Body::empty()).expect("request"))
+        .await
+        .expect("call billing");
+    router
+        .oneshot(Request::builder().uri("/backend/v3/api/log/echo").body(Body::empty()).expect("request"))
+        .await
+        .expect("call default");
+
+    let page = wait_for_rows(&store, 2).await;
+    let now = sdkwork_log_store_sqlx::now_epoch_secs();
+    let billing = page
+        .items
+        .iter()
+        .find(|row| row.record.path == "/backend/v3/api/billing/records")
+        .expect("billing row");
+    assert_eq!(None, billing.expires_at, "permanent rows never expire");
+    let default = page
+        .items
+        .iter()
+        .find(|row| row.record.path == "/backend/v3/api/log/echo")
+        .expect("default row");
+    assert!(
+        default.expires_at.unwrap() >= now + 30 * 86_400,
+        "undeclared paths keep the 1-month default"
+    );
+}
+
 async fn tenant_resolver_populates_context() {
     let Some(store) = test_store().await else {
         eprintln!("SKIP: SDKWORK_DATABASE_TEST_POSTGRES_URL is not configured");

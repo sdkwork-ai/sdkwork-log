@@ -14,7 +14,8 @@ use std::sync::Arc;
 use axum::Router;
 use http::Extensions;
 use sdkwork_database_sqlx::DatabasePool;
-use sdkwork_log_core::RequestLogStore;
+use sdkwork_log_core::{LogRetentionPolicy, RequestLogStore};
+use sdkwork_log_tower_adapter::ApiSurfaceResolver;
 use sdkwork_log_database_host::{bootstrap_log_database, bootstrap_log_database_from_env};
 use sdkwork_log_store_sqlx::SqlxRequestLogStore;
 use sdkwork_log_tower_adapter::RequestLoggingLayer;
@@ -88,7 +89,7 @@ pub async fn assemble_api_router(host: Arc<LogServiceHost>) -> Result<ApiAssembl
     let contribution = ApiAssembly::from_manifest(
         "sdkwork-log",
         "SDKWork Log Request Log API",
-        assemble_backend_business_router(host.clone(), DEFAULT_LOG_SERVICE_NAME).router,
+        assemble_backend_business_router(host.clone(), DEFAULT_LOG_SERVICE_NAME, None, None).router,
         HttpRouteManifest::from_owned_routes(routes),
         Vec::new(),
         Arc::new(LogReadiness {
@@ -110,13 +111,25 @@ pub async fn assemble_api_router_with_pool(pool: DatabasePool) -> Result<ApiAsse
 
 /// Compose the log backend business surface (query router + capture layer)
 /// on the shared pool owned by the consuming host (same-origin dependency
-/// composition, `API_ASSEMBLY_SPEC.md` §6.1).
+/// composition, `API_ASSEMBLY_SPEC.md` §6.1). `retention_policy` resolves
+/// each captured request's retention (billing/open-api surfaces typically
+/// declare `Permanent`); `None` uses the store's default 1-month TTL.
+/// `api_surface_resolver` overrides surface classification for non-canonical
+/// paths (for example open-api capability routes); `None` uses
+/// [`infer_api_surface`].
 pub async fn assemble_backend_business_router_with_pool(
     pool: &DatabasePool,
     service: &str,
+    retention_policy: Option<LogRetentionPolicy>,
+    api_surface_resolver: Option<Arc<ApiSurfaceResolver>>,
 ) -> Result<LogBackendAssembly, String> {
     let host = Arc::new(LogServiceHost::from_pool(pool).await?);
-    Ok(assemble_backend_business_router(host, service))
+    Ok(assemble_backend_business_router(
+        host,
+        service,
+        retention_policy,
+        api_surface_resolver,
+    ))
 }
 
 pub async fn assemble_backend_business_router_from_env() -> Result<LogBackendAssembly, String> {
@@ -124,19 +137,30 @@ pub async fn assemble_backend_business_router_from_env() -> Result<LogBackendAss
     Ok(assemble_backend_business_router(
         host,
         DEFAULT_LOG_SERVICE_NAME,
+        None,
+        None,
     ))
 }
 
 pub fn assemble_backend_business_router(
     host: Arc<LogServiceHost>,
     service: &str,
+    retention_policy: Option<LogRetentionPolicy>,
+    api_surface_resolver: Option<Arc<ApiSurfaceResolver>>,
 ) -> LogBackendAssembly {
     let store = host.store();
+    let mut layer = RequestLoggingLayer::new(store.clone())
+        .with_service(service)
+        .with_tenant_resolver(principal_tenant_user_resolver);
+    if let Some(policy) = retention_policy {
+        layer = layer.with_retention_policy(policy);
+    }
+    if let Some(resolver) = api_surface_resolver {
+        layer = layer.with_api_surface_resolver(move |path| resolver(path));
+    }
     LogBackendAssembly {
         router: sdkwork_routes_log_backend_api::build_router(store.clone()),
-        capture_layer: RequestLoggingLayer::new(store)
-            .with_service(service)
-            .with_tenant_resolver(principal_tenant_user_resolver),
+        capture_layer: layer,
     }
 }
 

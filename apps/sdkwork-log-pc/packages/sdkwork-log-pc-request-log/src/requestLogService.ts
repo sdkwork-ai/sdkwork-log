@@ -115,6 +115,8 @@ export class RequestLogService {
       operationId: filters.operationId || undefined,
       service: filters.service || undefined,
       status: filters.status,
+      durationMin: filters.durationMin || undefined,
+      durationMax: filters.durationMax || undefined,
       createdFrom: filters.createdFrom || undefined,
       createdTo: filters.createdTo || undefined,
       page,

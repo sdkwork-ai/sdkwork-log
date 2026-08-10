@@ -51,6 +51,10 @@ export interface RequestLogListFilters {
   operationId?: string;
   service?: string;
   status?: number;
+  /** Inclusive lower bound on durationMs (wire string). */
+  durationMin?: string;
+  /** Inclusive upper bound on durationMs (wire string). */
+  durationMax?: string;
   /** Inclusive lower bound on createdAt (epoch seconds). */
   createdFrom?: string;
   /** Inclusive upper bound on createdAt (epoch seconds). */

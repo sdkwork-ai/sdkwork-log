@@ -12,6 +12,7 @@ pub mod query;
 pub mod record;
 pub mod redact;
 pub mod request_id;
+pub mod retention;
 pub mod store;
 
 pub use query::{RequestLogListQuery, RequestLogPage, DEFAULT_LIST_PAGE_SIZE, MAX_LIST_PAGE_SIZE};
@@ -21,4 +22,7 @@ pub use redact::{
     redact_json_body, redact_query_params, redact_sensitive_value, truncate_body_text, REDACTED,
 };
 pub use request_id::new_request_log_id;
+pub use retention::{
+    DEFAULT_LOG_RETENTION_DAYS, LogRetention, LogRetentionPolicy, LogRetentionRule,
+};
 pub use store::{RequestLogStore, RequestLogStoreError};

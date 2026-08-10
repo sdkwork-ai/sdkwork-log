@@ -17,6 +17,8 @@ export interface LogRequestLogsListParams {
   operationId?: string;
   service?: string;
   status?: number;
+  durationMin?: string;
+  durationMax?: string;
   createdFrom?: string;
   createdTo?: string;
 }
@@ -44,6 +46,8 @@ export class LogRequestLogsApi {
       { name: 'operation_id', value: params?.operationId, style: 'form', explode: true, allowReserved: false },
       { name: 'service', value: params?.service, style: 'form', explode: true, allowReserved: false },
       { name: 'status', value: params?.status, style: 'form', explode: true, allowReserved: false },
+      { name: 'duration_min', value: params?.durationMin, style: 'form', explode: true, allowReserved: false },
+      { name: 'duration_max', value: params?.durationMax, style: 'form', explode: true, allowReserved: false },
       { name: 'created_from', value: params?.createdFrom, style: 'form', explode: true, allowReserved: false },
       { name: 'created_to', value: params?.createdTo, style: 'form', explode: true, allowReserved: false },
     ]);

@@ -356,6 +356,12 @@ export function RequestLogDetailPanel({
         <dd className="font-mono">{detail.service ?? '-'}</dd>
         <dt className="text-slate-500">Time</dt>
         <dd className="font-mono">{renderTimestamp(detail.createdAt, locale)}</dd>
+        <dt className="text-slate-500">Retention</dt>
+        <dd className="font-mono">
+          {detail.expiresAt
+            ? `${Math.max(1, Math.ceil((Number(detail.expiresAt) - Number(detail.createdAt)) / 86_400))} days`
+            : 'Permanent'}
+        </dd>
         <dt className="text-slate-500">Operation</dt>
         <dd className="font-mono">{detail.operationId ?? '-'}</dd>
         <dt className="text-slate-500">Tenant / User</dt>

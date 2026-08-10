@@ -4,13 +4,15 @@ use sdkwork_log_core::RequestLogRecord;
 use std::sync::Arc;
 
 /// Extracts the request metadata the middleware needs before the inner
-/// service runs. `tenant_resolver` / `path_template_resolver` come from the
-/// hosting application (layer configuration).
+/// service runs. `tenant_resolver` / `path_template_resolver` /
+/// `api_surface_resolver` come from the hosting application (layer
+/// configuration).
 pub(crate) fn build_record_metadata(
     parts: &http::request::Parts,
     service: &Option<String>,
     tenant_resolver: &Option<Arc<crate::TenantContextResolver>>,
     path_template_resolver: &Option<Arc<crate::PathTemplateResolver>>,
+    api_surface_resolver: &Option<Arc<crate::ApiSurfaceResolver>>,
 ) -> RequestLogRecord {
     let raw_path = parts.uri.path().to_owned();
     let path = match path_template_resolver {
@@ -44,7 +46,10 @@ pub(crate) fn build_record_metadata(
         .map(str::to_owned)
         .unwrap_or_else(|| trace_id.clone());
     let method = parts.method.as_str().to_owned();
-    let api_surface = crate::infer_api_surface(parts.uri.path());
+    let api_surface = match api_surface_resolver {
+        Some(resolver) => resolver(parts.uri.path()),
+        None => crate::infer_api_surface(parts.uri.path()),
+    };
 
     let mut record = RequestLogRecord {
         trace_id,
@@ -53,6 +58,7 @@ pub(crate) fn build_record_metadata(
         user_id,
         api_surface,
         path,
+        retention: None,
         method,
         operation_id: None,
         service: service.clone(),

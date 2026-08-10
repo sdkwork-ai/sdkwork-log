@@ -24,6 +24,7 @@ fn record(trace_id: &str, request_id: &str, status: u16) -> RequestLogRecord {
         user_id: Some("user-1".to_owned()),
         api_surface: LogApiSurface::BackendApi,
         path: "/backend/v3/api/log/request_logs".to_owned(),
+        retention: None,
         method: "GET".to_owned(),
         operation_id: Some("log.requestLogs.list".to_owned()),
         service: Some("sdkwork-api-log-assembly".to_owned()),
@@ -191,6 +192,96 @@ async fn list_filters_by_method() {
 
     let all = store.list(RequestLogListQuery::default()).await.expect("list");
     assert_eq!(3, all.total);
+}
+
+#[tokio::test]
+async fn list_filters_by_duration_range() {
+    let store = SqlxRequestLogStore::new_sqlite(test_pool().await);
+    let mut slow = record("trace-1", "req-1", 200);
+    slow.duration_ms = Some(2500);
+    store.save(slow).await.expect("save slow");
+    let mut fast = record("trace-2", "req-2", 200);
+    fast.duration_ms = Some(120);
+    store.save(fast).await.expect("save fast");
+    let mut medium = record("trace-3", "req-3", 200);
+    medium.duration_ms = Some(750);
+    store.save(medium).await.expect("save medium");
+
+    let bounded = store
+        .list(
+            RequestLogListQuery::default()
+                .with_duration_min(500)
+                .with_duration_max(1000),
+        )
+        .await
+        .expect("list");
+    assert_eq!(1, bounded.total);
+    assert_eq!("trace-3", bounded.items[0].record.trace_id);
+
+    let open_upper = store
+        .list(RequestLogListQuery::default().with_duration_max(100))
+        .await
+        .expect("list");
+    assert_eq!(0, open_upper.total);
+
+    let open_lower = store
+        .list(RequestLogListQuery::default().with_duration_min(1000))
+        .await
+        .expect("list");
+    assert_eq!(1, open_lower.total);
+    assert_eq!("trace-1", open_lower.items[0].record.trace_id);
+
+    let all = store.list(RequestLogListQuery::default()).await.expect("list");
+    assert_eq!(3, all.total);
+}
+
+#[tokio::test]
+async fn save_assigns_expires_at_from_retention() {
+    let store = SqlxRequestLogStore::new_sqlite(test_pool().await);
+    let now = sdkwork_log_store_sqlx::now_epoch_secs();
+
+    let mut permanent = record("trace-perm", "req-perm", 200);
+    permanent.retention = Some(sdkwork_log_core::LogRetention::Permanent);
+    store.save(permanent).await.expect("save permanent");
+
+    let mut monthly = record("trace-month", "req-month", 200);
+    monthly.retention = Some(sdkwork_log_core::LogRetention::Days(30));
+    store.save(monthly).await.expect("save monthly");
+
+    let mut declared = record("trace-declared", "req-declared", 200);
+    declared.retention = Some(sdkwork_log_core::LogRetention::Days(7));
+    store.save(declared).await.expect("save declared");
+
+    let page = store.list(RequestLogListQuery::default()).await.expect("list");
+    assert_eq!(3, page.total);
+    let rows = &page.items;
+    let permanent_row = rows
+        .iter()
+        .find(|row| row.record.trace_id == "trace-perm")
+        .expect("permanent row");
+    assert_eq!(None, permanent_row.expires_at, "permanent rows never expire");
+    let monthly_row = rows
+        .iter()
+        .find(|row| row.record.trace_id == "trace-month")
+        .expect("monthly row");
+    assert!(monthly_row.expires_at.unwrap() >= now + 30 * 86_400);
+    let declared_row = rows
+        .iter()
+        .find(|row| row.record.trace_id == "trace-declared")
+        .expect("declared row");
+    assert!(declared_row.expires_at.unwrap() >= now + 7 * 86_400);
+}
+
+#[tokio::test]
+async fn save_without_retention_uses_store_ttl() {
+    let store = SqlxRequestLogStore::new_sqlite(test_pool().await);
+    let now = sdkwork_log_store_sqlx::now_epoch_secs();
+    store.save(record("trace-ttl", "req-ttl", 200)).await.expect("save");
+
+    let page = store.list(RequestLogListQuery::default()).await.expect("list");
+    assert_eq!(1, page.total);
+    // Undeclared rows fall back to the store default TTL (1 month).
+    assert!(page.items[0].expires_at.unwrap() >= now + 30 * 86_400);
 }
 
 #[tokio::test]

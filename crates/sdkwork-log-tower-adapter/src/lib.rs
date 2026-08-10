@@ -57,7 +57,13 @@ pub type TenantContextResolver = dyn Fn(&http::Extensions) -> (Option<String>, O
 /// paths). Defaults to the raw path when not supplied.
 pub type PathTemplateResolver = dyn Fn(&http::Extensions, &str) -> String + Send + Sync;
 
-pub use sdkwork_log_core::{redact_body_text, truncate_body_text};
+/// API-surface resolver: maps a request path to its [`LogApiSurface`].
+/// Defaults to [`infer_api_surface`] when not supplied — hosts with
+/// non-canonical surface paths (for example open-api capability routes under
+/// `/v1/...`) inject a resolver so rows are labeled correctly.
+pub type ApiSurfaceResolver = dyn Fn(&str) -> LogApiSurface + Send + Sync;
+
+pub use sdkwork_log_core::{redact_body_text, truncate_body_text, LogRetentionPolicy};
 
 /// Infers the API surface from a path prefix (canonical framework surfaces).
 pub fn infer_api_surface(path: &str) -> LogApiSurface {
