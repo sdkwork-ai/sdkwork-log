@@ -33,4 +33,4 @@ postgres = [
 [dev-dependencies]
 tokio.workspace = true
 # 自依赖启用 sqlite feature，使 `cargo test` 可在本地 SQLite 上运行集成测试。
-sdkwork-log-store-sqlx = { path = ".", features = ["sqlite"] }
+sdkwork-log-store-sqlx = { workspace = true, features = ["sqlite"] }

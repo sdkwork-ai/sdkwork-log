@@ -1,9 +1,9 @@
 [package]
 name = "sdkwork-api-log-assembly"
-version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "Host-neutral API assembly for the SDKWork log request log capability (query router + capture layer + module lifecycle)."
+version.workspace = true
+description = "Generated API assembly for sdkwork-log application HTTP plane."
 
 [lib]
 name = "sdkwork_api_log_assembly"
@@ -11,22 +11,14 @@ path = "src/lib.rs"
 
 [dependencies]
 axum.workspace = true
-http.workspace = true
 tokio.workspace = true
+sdkwork-web-bootstrap.workspace = true
+sdkwork-web-core.workspace = true
+http.workspace = true
 sdkwork-database-sqlx = { workspace = true, default-features = false }
 sdkwork-log-core.workspace = true
 sdkwork-log-database-host.workspace = true
-sdkwork-log-store-sqlx = { workspace = true, default-features = false }
+sdkwork-log-store-sqlx = { workspace = true, default-features = false, features = ["postgres"] }
 sdkwork-log-tower-adapter.workspace = true
-sdkwork-routes-log-backend-api.workspace = true
-sdkwork-web-bootstrap.workspace = true
-sdkwork-web-core.workspace = true
 sdkwork-web-contract.workspace = true
-
-[features]
-default = ["postgres"]
-postgres = [
-    "sdkwork-log-database-host/postgres",
-    "sdkwork-log-store-sqlx/postgres",
-    "sdkwork-database-sqlx/postgres",
-]
+sdkwork-routes-log-backend-api.workspace = true
