@@ -201,7 +201,7 @@ async fn tenant_resolver_populates_context() {
                 .with_service("tenant-test")
                 .with_tenant_resolver(|extensions: &http::Extensions| {
                     let _ = extensions;
-                    (Some("100001".to_owned()), Some("user-9".to_owned()))
+                    (Some("100001".to_owned()), Some("user-9".to_owned()), Some("用户九".to_owned()))
                 }),
         );
 
@@ -213,6 +213,7 @@ async fn tenant_resolver_populates_context() {
     let page = wait_for_rows(&store, 1).await;
     assert_eq!(Some("100001".to_owned()), page.items[0].record.tenant_id);
     assert_eq!(Some("user-9".to_owned()), page.items[0].record.user_id);
+    assert_eq!(Some("用户九".to_owned()), page.items[0].record.user_name);
     assert_eq!(sdkwork_log_core::LogApiSurface::BackendApi, page.items[0].record.api_surface);
 }
 

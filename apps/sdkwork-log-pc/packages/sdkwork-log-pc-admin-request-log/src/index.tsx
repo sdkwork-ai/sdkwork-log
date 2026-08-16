@@ -252,6 +252,8 @@ export function RequestLogAdmin(): React.ReactElement {
               <th className="px-4 py-3 font-medium">{t('admin.requestLog.col.surface')}</th>
               <th className="px-4 py-3 font-medium">{t('admin.requestLog.col.method')}</th>
               <th className="px-4 py-3 font-medium">{t('admin.requestLog.col.path')}</th>
+              <th className="px-4 py-3 font-medium">{t('admin.requestLog.col.user')}</th>
+              <th className="px-4 py-3 font-medium">{t('admin.requestLog.col.ip')}</th>
               <th className="px-4 py-3 font-medium">{t('admin.requestLog.col.status')}</th>
               <th className="px-4 py-3 font-medium">{t('admin.requestLog.col.duration')}</th>
               <th className="px-4 py-3 font-medium">{t('admin.requestLog.col.service')}</th>
@@ -265,13 +267,13 @@ export function RequestLogAdmin(): React.ReactElement {
           <tbody className="divide-y divide-slate-100 dark:divide-white/5 text-slate-700 dark:text-slate-300 text-xs">
             {loading ? (
               <tr>
-                <td colSpan={12} className="px-4 py-8 text-center text-slate-400">
+                <td colSpan={14} className="px-4 py-8 text-center text-slate-400">
                   {t('admin.requestLog.state.loading')}
                 </td>
               </tr>
             ) : loadError ? (
               <tr>
-                <td colSpan={12} className="px-4 py-8 text-center">
+                <td colSpan={14} className="px-4 py-8 text-center">
                   <div className="text-rose-600 dark:text-rose-400">{t('admin.requestLog.state.error')}</div>
                   <div className="mt-1 text-slate-400">{loadError}</div>
                   <button
@@ -284,7 +286,7 @@ export function RequestLogAdmin(): React.ReactElement {
               </tr>
             ) : items.length === 0 ? (
               <tr>
-                <td colSpan={12} className="px-4 py-8 text-center text-slate-400">
+                <td colSpan={14} className="px-4 py-8 text-center text-slate-400">
                   {t('admin.requestLog.state.empty')}
                   <div className="mt-1 text-xs text-slate-500">{t('admin.requestLog.state.emptyDesc')}</div>
                 </td>
@@ -304,6 +306,10 @@ export function RequestLogAdmin(): React.ReactElement {
                     <td className="px-4 py-2.5 font-mono max-w-[320px] truncate" title={item.path}>
                       {item.path}
                     </td>
+                    <td className="px-4 py-2.5 max-w-[160px] truncate" title={item.userName ?? item.userId ?? undefined}>
+                      {item.userName ?? item.userId ?? '-'}
+                    </td>
+                    <td className="px-4 py-2.5 font-mono">{item.clientIpMasked ?? '-'}</td>
                     <td className="px-4 py-2.5">
                       <span
                         className={`inline-flex px-2 py-0.5 rounded-full border font-medium ${

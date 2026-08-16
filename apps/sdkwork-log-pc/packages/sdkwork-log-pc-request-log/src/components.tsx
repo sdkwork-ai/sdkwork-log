@@ -68,6 +68,8 @@ export function RequestLogTable({
             <th className="px-3 py-2">surface</th>
             <th className="px-3 py-2">method</th>
             <th className="px-3 py-2">path</th>
+            <th className="px-3 py-2">user</th>
+            <th className="px-3 py-2">ip</th>
             <th className="px-3 py-2">status</th>
             <th className="px-3 py-2">duration</th>
             <th className="px-3 py-2">service</th>
@@ -87,6 +89,10 @@ export function RequestLogTable({
               <td className="px-3 py-2 font-mono text-xs max-w-[320px] truncate" title={item.path}>
                 {item.path}
               </td>
+              <td className="px-3 py-2 font-mono text-xs max-w-[160px] truncate" title={item.userName ?? item.userId ?? undefined}>
+                {item.userName ?? item.userId ?? '-'}
+              </td>
+              <td className="px-3 py-2 font-mono text-xs">{item.clientIpMasked ?? '-'}</td>
               <td className="px-3 py-2">
                 <span
                   className={`inline-flex px-2 py-0.5 rounded-full border text-xs font-medium ${statusBadgeClassName(item.statusCode)}`}
@@ -364,10 +370,12 @@ export function RequestLogDetailPanel({
         </dd>
         <dt className="text-slate-500">Operation</dt>
         <dd className="font-mono">{detail.operationId ?? '-'}</dd>
-        <dt className="text-slate-500">Tenant / User</dt>
-        <dd className="font-mono">
-          {detail.tenantId ?? '-'} / {detail.userId ?? '-'}
-        </dd>
+        <dt className="text-slate-500">User</dt>
+        <dd className="font-mono">{detail.userName ?? detail.userId ?? '-'}</dd>
+        <dt className="text-slate-500">Client IP</dt>
+        <dd className="font-mono">{detail.clientIpMasked ?? '-'}</dd>
+        <dt className="text-slate-500">Tenant</dt>
+        <dd className="font-mono">{detail.tenantId ?? '-'}</dd>
         <dt className="text-slate-500">Query Params</dt>
         <dd className="font-mono break-all">{detail.queryParams ?? '-'}</dd>
         <dt className="text-slate-500">Headers</dt>

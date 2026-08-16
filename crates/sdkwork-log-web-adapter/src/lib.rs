@@ -28,9 +28,10 @@
 //! ```
 
 use async_trait::async_trait;
+use axum::extract::ConnectInfo;
 use sdkwork_log_core::{
-    capture_safe_headers, redact_query_params, LogApiSurface, LogRetentionPolicy,
-    RequestLogRecord, RequestLogStore,
+    capture_safe_headers, hash_client_ip, mask_client_ip, parse_client_ip, redact_query_params,
+    LogApiSurface, LogRetentionPolicy, RequestLogRecord, RequestLogStore,
 };
 use sdkwork_web_core::{
     problem::redact_path_template, trace::trace_id_from_traceparent, WebAuthMode, WebCallInterceptor,
@@ -117,6 +118,13 @@ where
             })
             .collect();
         state.safe_request_headers = capture_safe_headers(&headers);
+        // Client IP comes from the transport extension only (spoof-safe: never
+        // trusts client-supplied forwarding headers); the raw address is never
+        // persisted — the record stores a SHA-256 hash plus a masked form.
+        state.client_ip = request
+            .extensions()
+            .get::<ConnectInfo<std::net::SocketAddr>>()
+            .map(|ConnectInfo(addr)| addr.ip().to_string());
         Ok(())
     }
 
@@ -203,6 +211,15 @@ pub fn request_log_record_from_state(
         .map(str::to_owned)
         .or_else(|| state.request_id_value().map(str::to_owned));
 
+    let (client_ip_hash, client_ip_masked) = match state
+        .client_ip
+        .as_deref()
+        .and_then(parse_client_ip)
+    {
+        Some(ip) => (Some(hash_client_ip(ip)), Some(mask_client_ip(ip))),
+        None => (None, None),
+    };
+
     RequestLogRecord {
         trace_id: trace_id.unwrap_or_else(|| "unknown".to_owned()),
         request_id: state.request_id_value().unwrap_or("unknown").to_owned(),
@@ -214,6 +231,10 @@ pub fn request_log_record_from_state(
             .principal
             .as_ref()
             .map(|principal| principal.user_id().to_owned()),
+        user_name: state
+            .principal
+            .as_ref()
+            .and_then(|principal| principal.display_name().map(str::to_owned)),
         api_surface: match state.api_surface {
             sdkwork_web_core::WebApiSurface::OpenApi => LogApiSurface::OpenApi,
             sdkwork_web_core::WebApiSurface::AppApi => LogApiSurface::AppApi,
@@ -241,6 +262,8 @@ pub fn request_log_record_from_state(
             .and_then(|error| error.failed_stage.clone()),
         query_params: state.redacted_query.clone(),
         request_headers: state.safe_request_headers.clone(),
+        client_ip_hash,
+        client_ip_masked,
         // The web framework streams bodies and never exposes them to
         // interceptor stages; body capture is handled by
         // sdkwork-log-tower-adapter for tower/axum applications.
@@ -321,6 +344,7 @@ mod tests {
                 .organization_id(Some("0".to_owned()))
                 .login_scope(WebLoginScope::Tenant)
                 .user_id("user-1")
+                .display_name(Some("管理员甲".to_owned()))
                 .session_id(Some("session-1".to_owned()))
                 .app_id("log-console")
                 .environment(WebEnvironment::Prod)
@@ -332,6 +356,18 @@ mod tests {
         let record = request_log_record_from_state(&state, 201, None, None);
         assert_eq!(Some("100001".to_owned()), record.tenant_id);
         assert_eq!(Some("user-1".to_owned()), record.user_id);
+        assert_eq!(Some("管理员甲".to_owned()), record.user_name);
+    }
+
+    #[test]
+    fn record_captures_masked_and_hashed_client_ip() {
+        let mut state = state_with_traceparent();
+        state.client_ip = Some("203.0.113.7".to_owned());
+        let record = request_log_record_from_state(&state, 200, None, None);
+        assert_eq!(Some("203.0.113.x".to_owned()), record.client_ip_masked);
+        let hash = record.client_ip_hash.expect("hash");
+        assert_eq!(64, hash.len());
+        assert!(hash.chars().all(|ch| ch.is_ascii_hexdigit()));
     }
 
     #[test]

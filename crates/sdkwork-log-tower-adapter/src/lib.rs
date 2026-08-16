@@ -47,8 +47,9 @@ pub const DEFAULT_MAX_BODY_BUFFER_BYTES: usize = 256 * 1024;
 
 /// Tenant/user context extracted from request extensions by the hosting
 /// application (for example the framework principal). Returns `(tenant_id,
-/// user_id)`.
-pub type TenantContextResolver = dyn Fn(&http::Extensions) -> (Option<String>, Option<String>)
+/// user_id, user_name)` where `user_name` is the authenticated subject's
+/// display-name snapshot (`None` for unauthenticated / api-key requests).
+pub type TenantContextResolver = dyn Fn(&http::Extensions) -> (Option<String>, Option<String>, Option<String>)
     + Send
     + Sync;
 

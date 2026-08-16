@@ -62,6 +62,7 @@ function normalizeRequestLogItem(value: unknown): RequestLogItem {
     createdAt: readRequiredString(value, 'createdAt', 'Request log createdAt is required'),
     tenantId: readOptionalString(value, 'tenantId'),
     userId: readOptionalString(value, 'userId'),
+    userName: readOptionalString(value, 'userName'),
     operationId: readOptionalString(value, 'operationId'),
     service: readOptionalString(value, 'service'),
     environment: readOptionalString(value, 'environment'),
@@ -72,6 +73,7 @@ function normalizeRequestLogItem(value: unknown): RequestLogItem {
     failedStage: readOptionalString(value, 'failedStage'),
     queryParams: readOptionalString(value, 'queryParams'),
     requestHeaders: readOptionalString(value, 'requestHeaders'),
+    clientIpMasked: readOptionalString(value, 'clientIpMasked'),
     expiresAt: readOptionalStringNumber(value, 'expiresAt'),
   };
   return item;

@@ -8,6 +8,7 @@
 //! the server-owned `traceId`; access-log fields must use `traceId`, never a legacy
 //! `requestId`.
 
+pub mod ip;
 pub mod query;
 pub mod record;
 pub mod redact;
@@ -15,6 +16,7 @@ pub mod request_id;
 pub mod retention;
 pub mod store;
 
+pub use ip::{first_forwarded_ip, hash_client_ip, mask_client_ip, parse_client_ip};
 pub use query::{RequestLogListQuery, RequestLogPage, DEFAULT_LIST_PAGE_SIZE, MAX_LIST_PAGE_SIZE};
 pub use record::{LogApiSurface, RequestLogRecord, RequestLogRow};
 pub use redact::{

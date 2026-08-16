@@ -114,7 +114,9 @@ pub fn redact_query_params(query: Option<&str>) -> Option<String> {
 
 /// Allow-list of request headers whose values are safe to capture. Credential,
 /// cookie, and idempotency headers are always excluded; signed-URL carriers
-/// (for example `referer`) are excluded as well.
+/// (for example `referer`) are excluded as well. Forwarded IP headers
+/// (`x-forwarded-for` / `x-real-ip`) are excluded because the capture layer
+/// stores them explicitly as masked + hashed `client_ip` fields.
 pub fn is_safe_request_header(name: &str) -> bool {
     let normalized = name.trim().to_ascii_lowercase();
     !is_sensitive_header_name(&normalized)
@@ -125,8 +127,6 @@ pub fn is_safe_request_header(name: &str) -> bool {
                 | "accept"
                 | "accept-language"
                 | "origin"
-                | "x-forwarded-for"
-                | "x-real-ip"
                 | "x-client-kind"
                 | "x-sdkwork-client-kind"
                 | "x-request-id"

@@ -10,7 +10,7 @@
   ],
   "defaultEngine": "postgres",
   "tablePrefix": "log_",
-  "contractVersion": "1.1.0",
+  "contractVersion": "1.2.0",
   "baselineStrategy": "baseline-plus-migrations",
   "modules": [],
   "lifecycle": {

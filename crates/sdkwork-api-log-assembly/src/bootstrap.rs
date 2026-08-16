@@ -89,7 +89,8 @@ pub async fn assemble_api_router(host: Arc<LogServiceHost>) -> Result<ApiAssembl
     let contribution = ApiAssembly::from_manifest(
         "sdkwork-log",
         "SDKWork Log Request Log API",
-        assemble_backend_business_router(host.clone(), DEFAULT_LOG_SERVICE_NAME, None, None).router,
+        assemble_backend_business_router(host.clone(), DEFAULT_LOG_SERVICE_NAME, None, None, false)
+            .router,
         HttpRouteManifest::from_owned_routes(routes),
         Vec::new(),
         Arc::new(LogReadiness {
@@ -116,12 +117,15 @@ pub async fn assemble_api_router_with_pool(pool: DatabasePool) -> Result<ApiAsse
 /// declare `Permanent`); `None` uses the store's default 1-month TTL.
 /// `api_surface_resolver` overrides surface classification for non-canonical
 /// paths (for example open-api capability routes); `None` uses
-/// [`infer_api_surface`].
+/// [`infer_api_surface`]. `trust_forwarded_headers` gates client-IP capture
+/// from `x-forwarded-for` / `x-real-ip` (spoof-safe default: transport
+/// extension only).
 pub async fn assemble_backend_business_router_with_pool(
     pool: &DatabasePool,
     service: &str,
     retention_policy: Option<LogRetentionPolicy>,
     api_surface_resolver: Option<Arc<ApiSurfaceResolver>>,
+    trust_forwarded_headers: bool,
 ) -> Result<LogBackendAssembly, String> {
     let host = Arc::new(LogServiceHost::from_pool(pool).await?);
     Ok(assemble_backend_business_router(
@@ -129,6 +133,7 @@ pub async fn assemble_backend_business_router_with_pool(
         service,
         retention_policy,
         api_surface_resolver,
+        trust_forwarded_headers,
     ))
 }
 
@@ -139,6 +144,7 @@ pub async fn assemble_backend_business_router_from_env() -> Result<LogBackendAss
         DEFAULT_LOG_SERVICE_NAME,
         None,
         None,
+        false,
     ))
 }
 
@@ -147,11 +153,13 @@ pub fn assemble_backend_business_router(
     service: &str,
     retention_policy: Option<LogRetentionPolicy>,
     api_surface_resolver: Option<Arc<ApiSurfaceResolver>>,
+    trust_forwarded_headers: bool,
 ) -> LogBackendAssembly {
     let store = host.store();
     let mut layer = RequestLoggingLayer::new(store.clone())
         .with_service(service)
-        .with_tenant_resolver(principal_tenant_user_resolver);
+        .with_tenant_resolver(principal_tenant_user_resolver)
+        .with_trust_forwarded_headers(trust_forwarded_headers);
     if let Some(policy) = retention_policy {
         layer = layer.with_retention_policy(policy);
     }
@@ -164,18 +172,20 @@ pub fn assemble_backend_business_router(
     }
 }
 
-/// Resolves `(tenant_id, user_id)` from the web-framework principal injected
-/// by the outer runtime layer, so tenant isolation matches the authenticated
-/// admin subject boundary.
+/// Resolves `(tenant_id, user_id, user_name)` from the web-framework principal
+/// injected by the outer runtime layer, so tenant isolation matches the
+/// authenticated admin subject boundary and the row carries the subject's
+/// display-name snapshot.
 fn principal_tenant_user_resolver(
     extensions: &Extensions,
-) -> (Option<String>, Option<String>) {
+) -> (Option<String>, Option<String>, Option<String>) {
     let principal = extensions
         .get::<WebRequestContext>()
         .and_then(|context| context.principal());
     (
         principal.map(|value| value.tenant_id().to_owned()),
         principal.map(|value| value.user_id().to_owned()),
+        principal.and_then(|value| value.display_name().map(str::to_owned)),
     )
 }
 

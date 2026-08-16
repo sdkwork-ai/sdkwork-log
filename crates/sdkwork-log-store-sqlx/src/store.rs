@@ -70,17 +70,19 @@ impl RequestLogStore for SqlxRequestLogStore {
             LogStorePool::Sqlite(pool) => {
                 sqlx::query(
                     "INSERT INTO log_request \
-                     (id, trace_id, request_id, tenant_id, user_id, api_surface, path, method, \
-                      operation_id, service, environment, auth_mode, status_code, duration_ms, \
-                      error_code, failed_stage, query_params, request_headers, request_body, \
-                      response_body, created_at, expires_at) \
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                     (id, trace_id, request_id, tenant_id, user_id, user_name, api_surface, path, \
+                      method, operation_id, service, environment, auth_mode, status_code, \
+                      duration_ms, error_code, failed_stage, query_params, request_headers, \
+                      client_ip_hash, client_ip_masked, request_body, response_body, created_at, \
+                      expires_at) \
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 )
                 .bind(&id)
                 .bind(&record.trace_id)
                 .bind(&record.request_id)
                 .bind(&record.tenant_id)
                 .bind(&record.user_id)
+                .bind(&record.user_name)
                 .bind(api_surface)
                 .bind(&record.path)
                 .bind(&record.method)
@@ -94,6 +96,8 @@ impl RequestLogStore for SqlxRequestLogStore {
                 .bind(&record.failed_stage)
                 .bind(&record.query_params)
                 .bind(&record.request_headers)
+                .bind(&record.client_ip_hash)
+                .bind(&record.client_ip_masked)
                 .bind(&record.request_body)
                 .bind(&record.response_body)
                 .bind(now)
@@ -108,18 +112,20 @@ impl RequestLogStore for SqlxRequestLogStore {
             LogStorePool::Postgres(pool) => {
                 sqlx::query(
                     "INSERT INTO log_request \
-                     (id, trace_id, request_id, tenant_id, user_id, api_surface, path, method, \
-                      operation_id, service, environment, auth_mode, status_code, duration_ms, \
-                      error_code, failed_stage, query_params, request_headers, request_body, \
-                      response_body, created_at, expires_at) \
+                     (id, trace_id, request_id, tenant_id, user_id, user_name, api_surface, path, \
+                      method, operation_id, service, environment, auth_mode, status_code, \
+                      duration_ms, error_code, failed_stage, query_params, request_headers, \
+                      client_ip_hash, client_ip_masked, request_body, response_body, created_at, \
+                      expires_at) \
                      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, \
-                             $15, $16, $17, $18, $19, $20, $21, $22)",
+                             $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)",
                 )
                 .bind(&id)
                 .bind(&record.trace_id)
                 .bind(&record.request_id)
                 .bind(&record.tenant_id)
                 .bind(&record.user_id)
+                .bind(&record.user_name)
                 .bind(api_surface)
                 .bind(&record.path)
                 .bind(&record.method)
@@ -133,6 +139,8 @@ impl RequestLogStore for SqlxRequestLogStore {
                 .bind(&record.failed_stage)
                 .bind(&record.query_params)
                 .bind(&record.request_headers)
+                .bind(&record.client_ip_hash)
+                .bind(&record.client_ip_masked)
                 .bind(&record.request_body)
                 .bind(&record.response_body)
                 .bind(now)
@@ -201,6 +209,7 @@ struct LogRow {
     request_id: String,
     tenant_id: Option<String>,
     user_id: Option<String>,
+    user_name: Option<String>,
     api_surface: String,
     path: String,
     method: String,
@@ -214,6 +223,8 @@ struct LogRow {
     failed_stage: Option<String>,
     query_params: Option<String>,
     request_headers: Option<String>,
+    client_ip_hash: Option<String>,
+    client_ip_masked: Option<String>,
     request_body: Option<String>,
     response_body: Option<String>,
     created_at: i64,
@@ -229,6 +240,7 @@ impl LogRow {
                 request_id: self.request_id,
                 tenant_id: self.tenant_id,
                 user_id: self.user_id,
+                user_name: self.user_name,
                 api_surface: LogApiSurface::parse(&self.api_surface),
                 path: self.path,
                 retention: None,
@@ -243,6 +255,8 @@ impl LogRow {
                 failed_stage: self.failed_stage,
                 query_params: self.query_params,
                 request_headers: self.request_headers,
+                client_ip_hash: self.client_ip_hash,
+                client_ip_masked: self.client_ip_masked,
                 request_body: self.request_body,
                 response_body: self.response_body,
             },
@@ -253,15 +267,16 @@ impl LogRow {
 }
 
 const LIST_SELECT_COLUMNS: &str = "SELECT id, trace_id, request_id, tenant_id, user_id, \
-     api_surface, path, method, operation_id, service, environment, auth_mode, status_code, \
-     duration_ms, error_code, failed_stage, query_params, request_headers, \
-     NULL AS request_body, NULL AS response_body, created_at, expires_at \
+     user_name, api_surface, path, method, operation_id, service, environment, auth_mode, \
+     status_code, duration_ms, error_code, failed_stage, query_params, request_headers, \
+     client_ip_hash, client_ip_masked, NULL AS request_body, NULL AS response_body, \
+     created_at, expires_at \
      FROM log_request";
 
 const FULL_SELECT_COLUMNS: &str = "SELECT id, trace_id, request_id, tenant_id, user_id, \
-     api_surface, path, method, operation_id, service, environment, auth_mode, status_code, \
-     duration_ms, error_code, failed_stage, query_params, request_headers, request_body, \
-     response_body, created_at, expires_at \
+     user_name, api_surface, path, method, operation_id, service, environment, auth_mode, \
+     status_code, duration_ms, error_code, failed_stage, query_params, request_headers, \
+     client_ip_hash, client_ip_masked, request_body, response_body, created_at, expires_at \
      FROM log_request";
 
 #[cfg(feature = "sqlite")]

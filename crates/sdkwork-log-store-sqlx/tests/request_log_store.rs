@@ -22,6 +22,7 @@ fn record(trace_id: &str, request_id: &str, status: u16) -> RequestLogRecord {
         request_id: request_id.to_owned(),
         tenant_id: Some("100001".to_owned()),
         user_id: Some("user-1".to_owned()),
+        user_name: Some("测试管理员".to_owned()),
         api_surface: LogApiSurface::BackendApi,
         path: "/backend/v3/api/log/request_logs".to_owned(),
         retention: None,
@@ -36,6 +37,8 @@ fn record(trace_id: &str, request_id: &str, status: u16) -> RequestLogRecord {
         failed_stage: None,
         query_params: Some("page=1&page_size=20&token=[REDACTED]".to_owned()),
         request_headers: Some("{\"user-agent\":\"test-agent\"}".to_owned()),
+        client_ip_hash: Some("a".repeat(64)),
+        client_ip_masked: Some("203.0.113.x".to_owned()),
         request_body: Some("{\"prompt\":\"hi\",\"secret\":\"[REDACTED]\"}".to_owned()),
         response_body: Some("{\"choices\":[]}".to_owned()),
     }
@@ -71,6 +74,10 @@ async fn save_then_list_round_trip() {
         Some("{\"user-agent\":\"test-agent\"}".to_owned()),
         row.record.request_headers
     );
+    // Identity capture columns survive the round trip.
+    assert_eq!(Some("测试管理员".to_owned()), row.record.user_name);
+    assert_eq!(Some("203.0.113.x".to_owned()), row.record.client_ip_masked);
+    assert_eq!(Some("a".repeat(64)), row.record.client_ip_hash);
 }
 
 #[tokio::test]

@@ -16,6 +16,12 @@ export interface RequestLogItem {
   requestId: string;
   tenantId?: string | null;
   userId?: string | null;
+  /**
+   * Authenticated subject display-name snapshot captured at request time.
+   * The UI falls back to `userId` when the request was unauthenticated or
+   * api-key authenticated (no name claim).
+   */
+  userName?: string | null;
   apiSurface: LogApiSurface;
   path: string;
   method: string;
@@ -29,6 +35,8 @@ export interface RequestLogItem {
   failedStage?: string | null;
   queryParams?: string | null;
   requestHeaders?: string | null;
+  /** Masked client IP for display (`1.2.3.x`, IPv6 `/64` subnet). */
+  clientIpMasked?: string | null;
   createdAt: string;
   expiresAt?: string | null;
 }

@@ -9,7 +9,7 @@
     "protocol": "http",
     "packageName": "@sdkwork/log-backend-sdk"
   },
-  "changeFingerprint": "b8fdeb5873f73419899f5a2191442e070f0f26c06dcade70dfdde4bc87149513",
+  "changeFingerprint": "6e06c9104bb0ecbc4246c0a53cd4d448faf91033fb603b5d3da1294676f647b1",
   "changes": {
     "createdGeneratedFiles": [
       "bin/publish-core.mjs",

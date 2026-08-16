@@ -43,6 +43,10 @@ pub struct LogRequestListItem {
     pub request_id: String,
     pub tenant_id: Option<String>,
     pub user_id: Option<String>,
+    /// Authenticated subject display-name snapshot captured at request time.
+    /// The UI falls back to `userId` when unauthenticated / api-key requests
+    /// carry no name.
+    pub user_name: Option<String>,
     pub api_surface: String,
     pub path: String,
     pub method: String,
@@ -59,6 +63,10 @@ pub struct LogRequestListItem {
     pub query_params: Option<String>,
     /// Allow-listed safe request headers as a JSON object string.
     pub request_headers: Option<String>,
+    /// Masked client IP for display (`1.2.3.x`, IPv6 `/64` subnet). The raw
+    /// address is never persisted or exposed (`DATABASE_SPEC.md` §18); the
+    /// SHA-256 `client_ip_hash` stays internal for exact-match lookups.
+    pub client_ip_masked: Option<String>,
     #[serde(with = "sdkwork_utils_rust::serde_int64")]
     pub created_at: i64,
     #[serde(with = "sdkwork_utils_rust::serde_int64::option", default)]
@@ -73,6 +81,7 @@ impl LogRequestListItem {
             request_id: row.record.request_id,
             tenant_id: row.record.tenant_id,
             user_id: row.record.user_id,
+            user_name: row.record.user_name,
             api_surface: row.record.api_surface.as_str().to_owned(),
             path: row.record.path,
             method: row.record.method,
@@ -86,6 +95,7 @@ impl LogRequestListItem {
             failed_stage: row.record.failed_stage,
             query_params: row.record.query_params,
             request_headers: row.record.request_headers,
+            client_ip_masked: row.record.client_ip_masked,
             created_at: row.created_at,
             expires_at: row.expires_at,
         }
@@ -135,6 +145,7 @@ mod tests {
                 request_id: "req-1".to_owned(),
                 tenant_id: None,
                 user_id: None,
+                user_name: None,
                 api_surface: LogApiSurface::BackendApi,
                 path: "/backend/v3/api/log/request_logs".to_owned(),
                 retention: None,
@@ -149,6 +160,8 @@ mod tests {
                 failed_stage: None,
                 query_params: Some("page=1".to_owned()),
                 request_headers: None,
+                client_ip_hash: None,
+                client_ip_masked: Some("203.0.113.x".to_owned()),
                 request_body: Some("{\"prompt\":\"hi\"}".to_owned()),
                 response_body: None,
             },

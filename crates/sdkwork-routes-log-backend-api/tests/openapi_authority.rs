@@ -294,6 +294,7 @@ fn auth_mode_label(auth: sdkwork_web_contract::RouteAuth) -> &'static str {
         RouteAuth::OpenApiFlexible => "open-api-flexible",
         RouteAuth::OpenApiBearerFlexible => "open-api-bearer-flexible",
         RouteAuth::ApiKeyOrDualToken => "api-key-or-dual-token",
+        RouteAuth::DualTokenOrAnonymous => "dualTokenOrAnonymous",
         RouteAuth::RefreshToken => "refresh-token",
         RouteAuth::AgentToken => "agent-token",
         RouteAuth::Compatibility => "compatibility",

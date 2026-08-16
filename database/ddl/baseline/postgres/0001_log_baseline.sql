@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS log_request (
     request_id TEXT NOT NULL,
     tenant_id TEXT,
     user_id TEXT,
+    user_name TEXT,
     api_surface TEXT NOT NULL,
     path TEXT NOT NULL,
     method TEXT NOT NULL,
@@ -31,6 +32,8 @@ CREATE TABLE IF NOT EXISTS log_request (
     failed_stage TEXT,
     query_params TEXT,
     request_headers TEXT,
+    client_ip_hash TEXT,
+    client_ip_masked TEXT,
     request_body TEXT,
     response_body TEXT,
     created_at BIGINT NOT NULL,
@@ -69,5 +72,27 @@ BEGIN;
 
 ALTER TABLE log_request ADD COLUMN IF NOT EXISTS request_body TEXT;
 ALTER TABLE log_request ADD COLUMN IF NOT EXISTS response_body TEXT;
+
+COMMIT;
+
+-- folded migration: migrations/postgres/0002_log_request_user_ip.up.sql
+-- sdkwork:migration
+-- id: 0002_log_request_user_ip
+-- engine: postgres
+-- module: log
+-- purpose: Add user_name and masked/hashed client_ip columns to log_request.
+--   user_name snapshots the authenticated subject display name; client IP is
+--   stored masked + SHA-256 hashed only (DATABASE_SPEC §18, raw IPs are never
+--   persisted). The schema.yaml contract version bumps to 1.2.0.
+-- reversible: true
+-- transactional: true
+-- lock: table
+-- contract_version: 1.2.0
+
+BEGIN;
+
+ALTER TABLE log_request ADD COLUMN IF NOT EXISTS user_name TEXT;
+ALTER TABLE log_request ADD COLUMN IF NOT EXISTS client_ip_hash TEXT;
+ALTER TABLE log_request ADD COLUMN IF NOT EXISTS client_ip_masked TEXT;
 
 COMMIT;

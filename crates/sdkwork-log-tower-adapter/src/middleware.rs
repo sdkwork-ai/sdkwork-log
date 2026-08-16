@@ -30,6 +30,9 @@ pub struct RequestLoggingLayer {
     path_template_resolver: Option<Arc<PathTemplateResolver>>,
     api_surface_resolver: Option<Arc<ApiSurfaceResolver>>,
     retention_policy: Option<Arc<LogRetentionPolicy>>,
+    /// When true, `x-forwarded-for` (first valid IP) / `x-real-ip` are trusted
+    /// for client-IP capture — only safe behind a controlled reverse proxy.
+    trust_forwarded_headers: bool,
 }
 
 impl RequestLoggingLayer {
@@ -43,6 +46,7 @@ impl RequestLoggingLayer {
             path_template_resolver: None,
             api_surface_resolver: None,
             retention_policy: None,
+            trust_forwarded_headers: false,
         }
     }
 
@@ -61,10 +65,10 @@ impl RequestLoggingLayer {
         self
     }
 
-    /// Resolves `(tenant_id, user_id)` from request extensions.
+    /// Resolves `(tenant_id, user_id, user_name)` from request extensions.
     pub fn with_tenant_resolver<F>(mut self, resolver: F) -> Self
     where
-        F: Fn(&http::Extensions) -> (Option<String>, Option<String>) + Send + Sync + 'static,
+        F: Fn(&http::Extensions) -> (Option<String>, Option<String>, Option<String>) + Send + Sync + 'static,
     {
         self.tenant_resolver = Some(Arc::new(resolver));
         self
@@ -98,6 +102,17 @@ impl RequestLoggingLayer {
         self.retention_policy = Some(Arc::new(policy));
         self
     }
+
+    /// Controls client-IP capture. When `false` (default, spoof-safe) only the
+    /// `ConnectInfo<SocketAddr>` transport extension is used. When `true`,
+    /// `x-forwarded-for` (first valid IP) / `x-real-ip` are trusted and take
+    /// precedence — enable only behind a controlled reverse proxy. The raw
+    /// address is never persisted: rows store a SHA-256 hash plus a masked
+    /// form (`DATABASE_SPEC.md` §18).
+    pub fn with_trust_forwarded_headers(mut self, trust: bool) -> Self {
+        self.trust_forwarded_headers = trust;
+        self
+    }
 }
 
 impl<S> Layer<S> for RequestLoggingLayer {
@@ -113,6 +128,7 @@ impl<S> Layer<S> for RequestLoggingLayer {
             path_template_resolver: self.path_template_resolver.clone(),
             api_surface_resolver: self.api_surface_resolver.clone(),
             retention_policy: self.retention_policy.clone(),
+            trust_forwarded_headers: self.trust_forwarded_headers,
         }
     }
 }
@@ -129,6 +145,7 @@ pub struct RequestLoggingMiddleware<S> {
     path_template_resolver: Option<Arc<PathTemplateResolver>>,
     api_surface_resolver: Option<Arc<ApiSurfaceResolver>>,
     retention_policy: Option<Arc<LogRetentionPolicy>>,
+    trust_forwarded_headers: bool,
 }
 
 impl<S> Clone for RequestLoggingMiddleware<S>
@@ -145,6 +162,7 @@ where
             path_template_resolver: self.path_template_resolver.clone(),
             api_surface_resolver: self.api_surface_resolver.clone(),
             retention_policy: self.retention_policy.clone(),
+            trust_forwarded_headers: self.trust_forwarded_headers,
         }
     }
 }
@@ -192,6 +210,7 @@ where
             &self.tenant_resolver,
             &self.path_template_resolver,
             &self.api_surface_resolver,
+            self.trust_forwarded_headers,
         );
         if let Some(policy) = &self.retention_policy {
             record.retention = Some(policy.resolve(&record.path));

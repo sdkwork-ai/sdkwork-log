@@ -79,6 +79,11 @@ pub struct RequestLogRecord {
     pub request_id: String,
     pub tenant_id: Option<String>,
     pub user_id: Option<String>,
+    /// Display-name snapshot of the authenticated subject
+    /// (`iam_user.display_name`) captured at request time, so the row stays
+    /// readable after the user record changes. `None` for unauthenticated or
+    /// api-key requests (the frontend falls back to `user_id`).
+    pub user_name: Option<String>,
     pub api_surface: LogApiSurface,
     /// Redacted route template, e.g. `/app/v3/api/products/{productId}` — never
     /// raw paths with user/tenant/object identifiers.
@@ -110,6 +115,11 @@ pub struct RequestLogRecord {
     pub query_params: Option<String>,
     /// Allow-listed safe request headers as a JSON object string.
     pub request_headers: Option<String>,
+    /// SHA-256 hex digest of the client IP — exact-match lookup without
+    /// persisting the plaintext address (`DATABASE_SPEC.md` §18).
+    pub client_ip_hash: Option<String>,
+    /// Masked client IP for display (`1.2.3.x`, IPv6 `/64` subnet).
+    pub client_ip_masked: Option<String>,
     /// Full request body as captured text, with sensitive field values replaced
     /// by `[REDACTED]` (`DATABASE_SPEC.md` §18: raw tokens, passwords, secrets,
     /// and full sensitive payloads MUST NOT be stored). `None` when no body was
