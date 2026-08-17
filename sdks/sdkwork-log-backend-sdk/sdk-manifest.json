@@ -33,5 +33,6 @@
   "generation": {
     "standardProfile": "sdkwork-v3",
     "fixedVersion": "0.1.0"
-  }
+  },
+  "sdkDependencies": []
 }
