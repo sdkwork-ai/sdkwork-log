@@ -1,6 +1,6 @@
 {
   "name": "@sdkwork/log-backend-sdk",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "sdkworkRole": "composed-facade",
   "description": "SDKWork Log backend API SDK",
   "author": "SDKWork Team",
