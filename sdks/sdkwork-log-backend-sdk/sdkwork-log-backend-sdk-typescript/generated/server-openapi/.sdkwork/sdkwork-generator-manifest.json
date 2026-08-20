@@ -12,7 +12,7 @@
   "generatedFiles": [
     {
       "path": "bin/publish-core.mjs",
-      "sha256": "98ad0918a78bfbe22bf8f12fec709b0bed545b9e01edd40f5e4abf31a23378a5"
+      "sha256": "a47e95119bf3eafcbcb2102f7024c147f967924e4e3f343d1a29effb4b6765df"
     },
     {
       "path": "bin/publish.ps1",
@@ -40,11 +40,11 @@
     },
     {
       "path": "package.json",
-      "sha256": "2902b4b6bf8b0ea68992b745edb4382b8dfc21bfe76c0c59824ce0f811f09d97"
+      "sha256": "99546a5a7a04839645f678d9d3b70651f54460908822ebf62dab757fcf466d89"
     },
     {
       "path": "README.md",
-      "sha256": "c113fc08b207f2b8c032fa64bf4a67a62ca0ddbdb29161d917264be61a619024"
+      "sha256": "ebcffa3b10ee2e23b44bae0ac448d34b11f688491b9a77f14df3280ec4b917be"
     },
     {
       "path": "sdkwork-sdk.json",
@@ -52,7 +52,7 @@
     },
     {
       "path": "src/api/base.ts",
-      "sha256": "02ad25e6bf331ff241ba387c2947ddf1900dd849038e08c2757416a3aa788a04"
+      "sha256": "94d136c54a008dfe7602e373a0b2c79176bbf2fc6e7c899fc23b1f12f750380f"
     },
     {
       "path": "src/api/index.ts",
@@ -60,7 +60,7 @@
     },
     {
       "path": "src/api/log.ts",
-      "sha256": "e9f74d79fc2c19a643c0ea6d612311a0f995cd0c4b3e9c2387d4259a15a8180d"
+      "sha256": "cd68242d82ce692c3ad489366a652532e95915beb7b22eb042dfa30061bc5331"
     },
     {
       "path": "src/api/paths.ts",
@@ -72,7 +72,7 @@
     },
     {
       "path": "src/http/client.ts",
-      "sha256": "959c2a1f20f3029fe15077f2c8f67dc913cd6a397740bc599b6b96fd81022a71"
+      "sha256": "bab0f740731f04f1f6e3c591cba91b1577f0ca521054d187755f437925d3dc6d"
     },
     {
       "path": "src/http/index.ts",

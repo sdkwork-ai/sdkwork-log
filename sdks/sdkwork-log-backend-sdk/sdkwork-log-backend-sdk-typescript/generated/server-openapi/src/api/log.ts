@@ -51,21 +51,19 @@ export class LogRequestLogsApi {
       { name: 'created_from', value: params?.createdFrom, style: 'form', explode: true, allowReserved: false },
       { name: 'created_to', value: params?.createdTo, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<SdkWorkPageData>(appendQueryString(backendApiPath(`/log/request_logs`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+    return this.client.request<SdkWorkPageData>(appendQueryString(backendApiPath(`/log/request_logs`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 
 /** log.requestLogs.detail */
   async detail(id: string | number, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
-    return this.client.request<Record<string, unknown>>(backendApiPath(`/log/request_logs/${serializePathParameter(id, { name: 'id', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+    return this.client.request<Record<string, unknown>>(backendApiPath(`/log/request_logs/${serializePathParameter(id, { name: 'id', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 }
 
 export class LogApi {
-  private client: HttpClient;
   public readonly requestLogs: LogRequestLogsApi;
 
   constructor(client: HttpClient) {
-    this.client = client;
     this.requestLogs = new LogRequestLogsApi(client);
   }
 
