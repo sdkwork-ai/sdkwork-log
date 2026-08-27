@@ -44,3 +44,11 @@ dist/
 # Build artifacts
 build/
 .cache/
+# Runtime-generated environment configuration
+**/public/runtime-env.json
+
+# SDKWork local workspace state (private, not committed)
+.sdkwork/local
+.sdkwork/tmp
+.sdkwork/cache
+.sdkwork/secrets
