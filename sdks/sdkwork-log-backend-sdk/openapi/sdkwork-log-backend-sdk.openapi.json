@@ -343,18 +343,6 @@
             }
           },
           {
-            "deprecated": true,
-            "description": "Legacy alias for page_size (offset mode).",
-            "in": "query",
-            "name": "limit",
-            "required": false,
-            "schema": {
-              "maximum": 200,
-              "minimum": 1,
-              "type": "integer"
-            }
-          },
-          {
             "in": "query",
             "name": "trace_id",
             "required": false,
