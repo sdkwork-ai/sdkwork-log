@@ -305,7 +305,7 @@
   "paths": {
     "/backend/v3/api/log/request_logs": {
       "get": {
-        "operationId": "log.requestLogs.list",
+        "operationId": "requestLogs.list",
         "parameters": [
           {
             "in": "query",
@@ -552,7 +552,7 @@
     },
     "/backend/v3/api/log/request_logs/{id}": {
       "get": {
-        "operationId": "log.requestLogs.detail",
+        "operationId": "requestLogs.retrieve",
         "responses": {
           "200": {
             "content": {
@@ -633,7 +633,8 @@
         "x-sdkwork-permission": "log.tenant.read",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-required-surface": "organizationMember",
-        "x-sdkwork-route-auth": "dual-token"
+        "x-sdkwork-route-auth": "dual-token",
+        "parameters": []
       }
     }
   },

@@ -40,3 +40,7 @@ pub fn build_router(store: Arc<dyn sdkwork_log_core::RequestLogStore>) -> axum::
         )
         .with_state(state::LogQueryState::from_store(store))
 }
+
+pub fn gateway_mount(store: Arc<dyn sdkwork_log_core::RequestLogStore>) -> axum::Router {
+    build_router(store)
+}
