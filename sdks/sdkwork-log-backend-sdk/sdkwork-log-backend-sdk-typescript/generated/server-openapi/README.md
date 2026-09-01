@@ -28,7 +28,7 @@ client.setAccessToken('your-access-token');
 
 // Use the SDK
 const id = '1';
-const result = await client.log.requestLogs.detail(id);
+const result = await client.log.requestLogs.retrieve(id);
 ```
 
 ## Authentication
@@ -64,7 +64,7 @@ const client = new SdkworkBackendClient({
 ```typescript
 // log.requestLogs.detail
 const id = '1';
-const result = await client.log.requestLogs.detail(id);
+const result = await client.log.requestLogs.retrieve(id);
 ```
 
 ## Error Handling
@@ -74,7 +74,7 @@ import { SdkworkBackendClient, NetworkError, TimeoutError, AuthenticationError }
 
 try {
   const id = '1';
-  const result = await client.log.requestLogs.detail(id);
+  const result = await client.log.requestLogs.retrieve(id);
 } catch (error) {
   if (error instanceof AuthenticationError) {
     console.error('Authentication failed:', error.message);

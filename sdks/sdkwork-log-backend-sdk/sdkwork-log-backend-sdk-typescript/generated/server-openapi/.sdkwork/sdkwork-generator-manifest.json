@@ -44,7 +44,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "ebcffa3b10ee2e23b44bae0ac448d34b11f688491b9a77f14df3280ec4b917be"
+      "sha256": "5ecb2dbd3b2d22180150569713ebb85f1e0ff94839609fd0d05dd78c31144e0a"
     },
     {
       "path": "sdkwork-sdk.json",
@@ -60,7 +60,7 @@
     },
     {
       "path": "src/api/log.ts",
-      "sha256": "cd68242d82ce692c3ad489366a652532e95915beb7b22eb042dfa30061bc5331"
+      "sha256": "ea3c8717e50374f50d6e3674c550a2f38830812a228b110a58120c8981d4a389"
     },
     {
       "path": "src/api/paths.ts",
@@ -140,7 +140,7 @@
     },
     {
       "path": "tsconfig.json",
-      "sha256": "7c8a6c2b00fb208ec28e1e6045194487d1b3e563d6c44cef4783fd4fe0e8ffad"
+      "sha256": "35f6f0baf03ca4245339f0a532b02c6b0c8e64d66852a2f77d38ae063b2024b8"
     }
   ],
   "scaffoldFiles": [
