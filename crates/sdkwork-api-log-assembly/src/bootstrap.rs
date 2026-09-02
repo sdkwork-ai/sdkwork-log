@@ -19,7 +19,7 @@ use sdkwork_log_tower_adapter::ApiSurfaceResolver;
 use sdkwork_log_database_host::{bootstrap_log_database, bootstrap_log_database_from_env};
 use sdkwork_log_store_sqlx::SqlxRequestLogStore;
 use sdkwork_log_tower_adapter::RequestLoggingLayer;
-use sdkwork_web_bootstrap::{ApiAssemblyContribution, ReadinessCheck, ReadinessFuture};
+use sdkwork_web_bootstrap::{ApiAssemblyContribution, ReadinessCheck, ReadinessFuture, WebModule};
 use sdkwork_web_core::{HttpRouteManifest, WebRequestContext};
 
 /// Default request-log service identity recorded on captured rows.
@@ -216,4 +216,17 @@ impl ReadinessCheck for LogReadiness {
             }
         })
     }
+}
+
+/// Canonical Web Module definition for this application
+/// (API_ASSEMBLY_SPEC §4.1.1): the complete HTTP surface — every route,
+/// manifest, and OpenAPI document of this owner — as one installable module.
+pub async fn web_module() -> Result<WebModule, String> {
+    Ok(WebModule::from_contribution(assemble_api_router_from_env().await?))
+}
+
+/// Same as [`web_module`] but composed on a process-shared database pool
+/// (platform gateways, API_ASSEMBLY_SPEC §4.1.1).
+pub async fn web_module_with_pool(pool: DatabasePool) -> Result<WebModule, String> {
+    Ok(WebModule::from_contribution(assemble_api_router_with_pool(pool).await?))
 }
