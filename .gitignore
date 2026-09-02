@@ -52,3 +52,7 @@ build/
 .sdkwork/tmp
 .sdkwork/cache
 .sdkwork/secrets
+
+# Local build backups and runtime artifacts (do not commit)
+**/dist-*-bak/
+**/dist-stale-bak/
