@@ -20,7 +20,24 @@
     "api:assembly:materialize": "node ../sdkwork-specs/tools/materialize-api-assembly.mjs --root .",
     "api:assembly:validate": "node ../sdkwork-specs/tools/validate-api-assembly.mjs --root .",
     "db:postgres:plan": "cargo run --manifest-path ../sdkwork-database/Cargo.toml -p sdkwork-database-cli -- --app-root . plan --engine postgres",
-    "db:postgres:init": "cargo run --manifest-path ../sdkwork-database/Cargo.toml -p sdkwork-database-cli -- --app-root . init --engine postgres"
+    "db:postgres:init": "cargo run --manifest-path ../sdkwork-database/Cargo.toml -p sdkwork-database-cli -- --app-root . init --engine postgres",
+    "test": "pnpm exec sdkwork-app test",
+    "clean": "pnpm exec sdkwork-app clean",
+    "verify": "pnpm exec sdkwork-app verify",
+    "dev:standalone": "pnpm exec sdkwork-app dev --deployment-profile standalone",
+    "dev:cloud": "pnpm exec sdkwork-app dev --deployment-profile cloud",
+    "dev": "pnpm dev:standalone",
+    "build": "pnpm exec sdkwork-app build",
+    "check": "pnpm exec sdkwork-app check",
+    "_sdkwork:test": "cargo test --workspace",
+    "_sdkwork:clean": "cargo clean",
+    "_sdkwork:verify": "pnpm run test",
+    "stop": "pnpm exec sdkwork-app stop",
+    "_sdkwork:build": "cargo build --workspace --release",
+    "_sdkwork:check": "pnpm run db:validate && pnpm run api:assembly:validate && pnpm run typecheck && cargo check --workspace"
+  },
+  "devDependencies": {
+    "@sdkwork/app-topology": "workspace:*"
   },
   "pnpm": {
     "overrides": {
