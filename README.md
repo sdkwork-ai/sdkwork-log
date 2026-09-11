@@ -1,4 +1,5 @@
 # sdkwork-log
+repository-kind: application
 
 SDKWork **独立请求日志基础模块**（platform / logging）。框架无关的请求日志领域模型、`log_request` 持久化存储（SQLite / PostgreSQL）、TTL 清理与查询契约、web 框架捕获适配器与 tower/axum 完整捕获中间件（含脱敏 body），以及可复用前端面与生成的 backend SDK。
 

@@ -1,10 +1,14 @@
 [package]
+rust-version.workspace = true
 name = "sdkwork-log-tower-adapter"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 description = "Tower/axum capture middleware: persists full request logs (metadata + redacted request/response bodies) through sdkwork-log stores."
 
+
+[lints]
+workspace = true
 [lib]
 name = "sdkwork_log_tower_adapter"
 path = "src/lib.rs"

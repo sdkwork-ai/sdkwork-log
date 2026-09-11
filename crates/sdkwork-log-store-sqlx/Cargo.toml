@@ -1,10 +1,14 @@
 [package]
+rust-version.workspace = true
 name = "sdkwork-log-store-sqlx"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 description = "SQLx-backed RequestLogStore for the SDKWork log foundation (log_request table)."
 
+
+[lints]
+workspace = true
 [lib]
 name = "sdkwork_log_store_sqlx"
 path = "src/lib.rs"

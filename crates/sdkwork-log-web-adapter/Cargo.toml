@@ -1,10 +1,14 @@
 [package]
+rust-version.workspace = true
 name = "sdkwork-log-web-adapter"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 description = "Web framework capture adapter: records every HTTP request (including webhooks) through sdkwork-log stores."
 
+
+[lints]
+workspace = true
 [lib]
 name = "sdkwork_log_web_adapter"
 path = "src/lib.rs"

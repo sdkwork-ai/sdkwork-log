@@ -1,10 +1,14 @@
 [package]
+rust-version.workspace = true
 name = "sdkwork-log-database-host"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 description = "SDKWork Log database lifecycle bootstrap (log_request module)."
 
+
+[lints]
+workspace = true
 [lib]
 name = "sdkwork_log_database_host"
 path = "src/lib.rs"

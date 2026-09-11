@@ -1,10 +1,14 @@
 [package]
+rust-version.workspace = true
 name = "sdkwork-routes-log-backend-api"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 description = "Platform backend-api for request log queries (log_request list/search)."
 
+
+[lints]
+workspace = true
 [lib]
 name = "sdkwork_routes_log_backend_api"
 path = "src/lib.rs"

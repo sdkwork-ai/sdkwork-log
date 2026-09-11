@@ -1,10 +1,14 @@
 [package]
+rust-version.workspace = true
 name = "sdkwork-log-core"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 description = "SDKWork log foundation: framework-agnostic request log domain model and store contract."
 
+
+[lints]
+workspace = true
 [lib]
 name = "sdkwork_log_core"
 path = "src/lib.rs"
