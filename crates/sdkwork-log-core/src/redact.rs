@@ -244,7 +244,7 @@ pub fn truncate_body_text(text: &str, max_chars: usize) -> String {
     }
 }
 
-#[cfg(test)]
+#[cfg(test)] // WORKSPACE-PATH:allow-fixture-block: this module is the file's #[cfg(test)] unit-test fixture data
 mod tests {
     use super::*;
 
