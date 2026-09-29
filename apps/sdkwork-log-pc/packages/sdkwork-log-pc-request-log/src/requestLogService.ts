@@ -139,7 +139,11 @@ export class RequestLogService {
   /** Fetches one request log row with the full redacted input/output bodies. */
   static async detail(id: string): Promise<RequestLogDetail> {
     const client = getLogBackendSdkClient();
-    const data = await client.log.requestLogs.detail(id);
+    // The generated SDK names this operation `retrieve`: API_SPEC section 15.4
+    // maps `GET /<resources>/{id}` to the `retrieve` action, so the method name
+    // follows the OpenAPI `operationId` action segment, not the `detail` wording
+    // used by the route manifest.
+    const data = await client.log.requestLogs.retrieve(id);
     return normalizeRequestLogDetail(data);
   }
 }
