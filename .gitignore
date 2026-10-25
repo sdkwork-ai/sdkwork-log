@@ -66,3 +66,14 @@ __pycache__/
 
 # Local assistant state (do not commit)
 .workbuddy/
+
+# ---- auto-audited: local artifacts that must never be committed ----
+*.p12
+*.pfx
+*.keystore
+temp/
+*.tmp
+*.temp
+.next/
+coverage/
+target/
