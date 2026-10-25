@@ -6,7 +6,7 @@
     "name": "sdkwork-log",
     "repository": "sdkwork-ai/sdkwork-log",
     "sourcePath": ".",
-    "configPath": "sdkwork.app.config.json"
+    "configPath": "agent.app.config.json"
   },
   "release": {
     "artifactPrefix": "sdkwork-log",
