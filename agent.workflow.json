@@ -64,8 +64,9 @@
   ],
   "toolchains": {},
   "lifecycle": {},
-  "targets": {},
+  "targets": [],
   "security": {},
   "publish": {},
-  "deployments": {}
+  "deployments": [],
+  "workflowRole": "ci-only"
 }
