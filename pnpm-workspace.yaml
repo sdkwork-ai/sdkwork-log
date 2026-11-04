@@ -24,6 +24,9 @@ packages:
   - "../sdkwork-ui/sdkwork-ui-pc-react"
   - "../sdkwork-sdk-commons/sdkwork-sdk-common-typescript"
   - "../sdkwork-utils/packages/sdkwork-utils-typescript"
+  - "../sdkwork-appbase/packages/common/foundation/sdkwork-appbase-component-core"
+  - "../sdkwork-iam/apps/sdkwork-iam-common/packages/sdkwork-iam-desktop-auth"
+  - "../sdkwork-app-topology"
 
 catalog:
   react: ^19.2.8
