@@ -56,6 +56,13 @@ fn authority_openapi_document() -> Value {
                     ("trace_id", json!({ "type": "string" })),
                     ("request_id", json!({ "type": "string" })),
                     (
+                        "path",
+                        json!({
+                            "type": "string",
+                            "description": "Literal path prefix filter: matches the exact path and every nested path under it."
+                        }),
+                    ),
+                    (
                         "api_surface",
                         json!({
                             "type": "string",

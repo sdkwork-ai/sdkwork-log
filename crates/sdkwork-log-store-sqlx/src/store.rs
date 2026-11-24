@@ -349,6 +349,22 @@ async fn list_postgres(
     })
 }
 
+/// Builds a `LIKE` pattern for a literal path prefix.
+///
+/// `%`, `_`, and the escape character `\` are escaped so the input is matched
+/// literally, then `%` is appended so the pattern only constrains the prefix.
+fn like_prefix_pattern(prefix: &str) -> String {
+    let mut pattern = String::with_capacity(prefix.len() + 1);
+    for character in prefix.chars() {
+        if matches!(character, '\\' | '%' | '_') {
+            pattern.push('\\');
+        }
+        pattern.push(character);
+    }
+    pattern.push('%');
+    pattern
+}
+
 /// Pushes optional equality/range filters. Conditions are appended only when the
 /// filter is present — a `NULL` bind would silently drop rows from comparisons.
 #[cfg(feature = "sqlite")]
@@ -361,6 +377,11 @@ fn push_filters_sqlite(
     }
     if let Some(value) = &query.request_id {
         qb.push(" AND request_id = ").push_bind(value);
+    }
+    if let Some(value) = &query.path_prefix {
+        qb.push(" AND path LIKE ")
+            .push_bind(like_prefix_pattern(value))
+            .push(" ESCAPE '\\'");
     }
     if let Some(value) = &query.tenant_id {
         qb.push(" AND tenant_id = ").push_bind(value);
@@ -404,6 +425,11 @@ fn push_filters_postgres(
     }
     if let Some(value) = &query.request_id {
         qb.push(" AND request_id = ").push_bind(value);
+    }
+    if let Some(value) = &query.path_prefix {
+        qb.push(" AND path LIKE ")
+            .push_bind(like_prefix_pattern(value))
+            .push(" ESCAPE '\\'");
     }
     if let Some(value) = &query.tenant_id {
         qb.push(" AND tenant_id = ").push_bind(value);

@@ -12,6 +12,9 @@ pub const MAX_LIST_PAGE_SIZE: i64 = 200;
 pub struct RequestLogListQuery {
     pub trace_id: Option<String>,
     pub request_id: Option<String>,
+    /// Literal path prefix filter: matches the exact path and every nested path
+    /// under it (`/v1/chat` also matches `/v1/chat/completions`).
+    pub path_prefix: Option<String>,
     pub tenant_id: Option<String>,
     pub api_surface: Option<LogApiSurface>,
     /// HTTP method filter (for example `GET`).
@@ -44,6 +47,7 @@ impl RequestLogListQuery {
         Self {
             trace_id: None,
             request_id: None,
+            path_prefix: None,
             tenant_id: None,
             api_surface: None,
             method: None,
@@ -66,6 +70,11 @@ impl RequestLogListQuery {
 
     pub fn with_request_id(mut self, request_id: impl Into<String>) -> Self {
         self.request_id = Some(request_id.into());
+        self
+    }
+
+    pub fn with_path_prefix(mut self, path_prefix: impl Into<String>) -> Self {
+        self.path_prefix = Some(path_prefix.into());
         self
     }
 

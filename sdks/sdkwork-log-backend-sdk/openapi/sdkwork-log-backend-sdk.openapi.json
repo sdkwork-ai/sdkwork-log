@@ -343,6 +343,18 @@
             }
           },
           {
+            "deprecated": true,
+            "description": "Legacy alias for page_size (offset mode).",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "maximum": 200,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
             "in": "query",
             "name": "trace_id",
             "required": false,
@@ -355,6 +367,15 @@
             "name": "request_id",
             "required": false,
             "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "path",
+            "required": false,
+            "schema": {
+              "description": "Literal path prefix filter: matches the exact path and every nested path under it.",
               "type": "string"
             }
           },
@@ -523,7 +544,7 @@
             "AuthToken": []
           }
         ],
-        "summary": "log.requestLogs.list",
+        "summary": "requestLogs.list",
         "tags": [
           "log"
         ],
@@ -609,7 +630,7 @@
             "AuthToken": []
           }
         ],
-        "summary": "log.requestLogs.detail",
+        "summary": "requestLogs.retrieve",
         "tags": [
           "log"
         ],
@@ -621,8 +642,7 @@
         "x-sdkwork-permission": "log.tenant.read",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-required-surface": "organizationMember",
-        "x-sdkwork-route-auth": "dual-token",
-        "parameters": []
+        "x-sdkwork-route-auth": "dual-token"
       }
     }
   },

@@ -9,8 +9,10 @@ export interface LogRequestLogsListParams {
   tenantId?: string;
   page?: number;
   pageSize?: number;
+  limit?: number;
   traceId?: string;
   requestId?: string;
+  path?: string;
   apiSurface?: 'open-api' | 'app-api' | 'backend-api' | 'internal-api' | 'gateway-api' | 'unknown';
   method?: string;
   operationId?: string;
@@ -30,15 +32,17 @@ export class LogRequestLogsApi {
   }
 
 
-/** log.requestLogs.list */
+/** requestLogs.list */
   async list(params?: LogRequestLogsListParams, requestOptions?: ApiRequestOptions): Promise<SdkWorkPageData> {
     const query = buildQueryString([
       { name: 'environment', value: params?.environment, style: 'form', explode: true, allowReserved: false },
       { name: 'tenant_id', value: params?.tenantId, style: 'form', explode: true, allowReserved: false },
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
+      { name: 'limit', value: params?.limit, style: 'form', explode: true, allowReserved: false },
       { name: 'trace_id', value: params?.traceId, style: 'form', explode: true, allowReserved: false },
       { name: 'request_id', value: params?.requestId, style: 'form', explode: true, allowReserved: false },
+      { name: 'path', value: params?.path, style: 'form', explode: true, allowReserved: false },
       { name: 'api_surface', value: params?.apiSurface, style: 'form', explode: true, allowReserved: false },
       { name: 'method', value: params?.method, style: 'form', explode: true, allowReserved: false },
       { name: 'operation_id', value: params?.operationId, style: 'form', explode: true, allowReserved: false },
@@ -52,7 +56,7 @@ export class LogRequestLogsApi {
     return this.client.request<SdkWorkPageData>(appendQueryString(backendApiPath(`/log/request_logs`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 
-/** log.requestLogs.detail */
+/** requestLogs.retrieve */
   async retrieve(id: string | number, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
     return this.client.request<Record<string, unknown>>(backendApiPath(`/log/request_logs/${serializePathParameter(id, { name: 'id', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }

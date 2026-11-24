@@ -4,6 +4,7 @@ export const zhMessages: Record<string, string> = {
   'admin.requestLog.subtitle': '完整记录请求/响应的输入输出（敏感字段已脱敏）。',
   'admin.requestLog.filter.traceId': 'Trace ID',
   'admin.requestLog.filter.requestId': '请求 ID',
+  'admin.requestLog.filter.path': '路径',
   'admin.requestLog.filter.apiSurface': 'API 面',
   'admin.requestLog.filter.method': '方法',
   'admin.requestLog.filter.status': '状态码',

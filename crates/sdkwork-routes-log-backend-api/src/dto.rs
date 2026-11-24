@@ -13,6 +13,9 @@ pub struct AdminLogListQuery {
     pub tenant_id: Option<String>,
     pub trace_id: Option<String>,
     pub request_id: Option<String>,
+    /// Path prefix filter: matches the exact path and every nested path under
+    /// it (`/v1/chat` also matches `/v1/chat/completions`).
+    pub path: Option<String>,
     pub api_surface: Option<String>,
     /// HTTP method filter (for example `GET`).
     pub method: Option<String>,

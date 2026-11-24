@@ -25,7 +25,7 @@ fn manifest_contract_matches_committed_routes_manifest() {
 fn manifest_declares_request_log_list_route() {
     let list = ROUTES
         .iter()
-        .find(|route| route.operation_id == "log.requestLogs.list")
+        .find(|route| route.operation_id == "requestLogs.list")
         .expect("list route");
     assert_eq!(HttpMethod::Get, list.method);
     assert_eq!(paths::request_logs::PATH, list.path);
@@ -35,7 +35,7 @@ fn manifest_declares_request_log_list_route() {
 fn manifest_declares_request_log_detail_route() {
     let detail = ROUTES
         .iter()
-        .find(|route| route.operation_id == "log.requestLogs.detail")
+        .find(|route| route.operation_id == "requestLogs.retrieve")
         .expect("detail route");
     assert_eq!(HttpMethod::Get, detail.method);
     assert_eq!(paths::request_log_detail::PATH, detail.path);

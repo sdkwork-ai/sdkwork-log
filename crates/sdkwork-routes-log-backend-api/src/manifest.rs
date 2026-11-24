@@ -9,7 +9,7 @@ pub const ROUTES: &[HttpRoute] = &[
         HttpMethod::Get,
         paths::request_logs::PATH,
         "log",
-        "log.requestLogs.list",
+        "requestLogs.list",
     )
     .with_required_permission(PERM_LOG_TENANT_READ)
     .with_alternate_permissions(&[PERM_LOG_PLATFORM_READ]),
@@ -17,7 +17,7 @@ pub const ROUTES: &[HttpRoute] = &[
         HttpMethod::Get,
         paths::request_log_detail::PATH,
         "log",
-        "log.requestLogs.detail",
+        "requestLogs.retrieve",
     )
     .with_required_permission(PERM_LOG_TENANT_READ)
     .with_alternate_permissions(&[PERM_LOG_PLATFORM_READ]),

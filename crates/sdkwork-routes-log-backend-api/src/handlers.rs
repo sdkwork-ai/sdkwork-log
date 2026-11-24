@@ -57,6 +57,10 @@ pub async fn list_request_logs(
             store_query.tenant_id = tenant_id;
             store_query.trace_id = query.trace_id.filter(|value| !value.is_empty());
             store_query.request_id = query.request_id.filter(|value| !value.is_empty());
+            store_query.path_prefix = query
+                .path
+                .map(|value| value.trim().to_owned())
+                .filter(|value| !value.is_empty());
             store_query.api_surface = query
                 .api_surface
                 .filter(|value| !value.is_empty())

@@ -62,7 +62,7 @@ const client = new SdkworkBackendClient({
 ### log
 
 ```typescript
-// log.requestLogs.detail
+// requestLogs.retrieve
 const id = '1';
 const result = await client.log.requestLogs.retrieve(id);
 ```
@@ -95,7 +95,7 @@ This SDK includes cross-platform publish scripts in `bin/`:
 - `bin/publish.sh`
 - `bin/publish.ps1`
 
-TypeScript check and publish commands use pnpm to materialize workspace dependency versions in a temporary tarball. They reject local-only dependency protocols before npm publication and do not rewrite the source `package.json`.
+TypeScript check and publish commands materialize workspace dependency versions in a temporary tarball with pnpm. They reject local-only dependency protocols before npm publication and do not rewrite the source `package.json`.
 
 ### Check
 

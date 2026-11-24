@@ -76,6 +76,7 @@ export function RequestLogAdmin(): React.ReactElement {
 
   const [traceIdFilter, setTraceIdFilter] = useState('');
   const [requestIdFilter, setRequestIdFilter] = useState('');
+  const [pathFilter, setPathFilter] = useState('');
   const [surfaceFilter, setSurfaceFilter] = useState<LogApiSurface | ''>('');
   const [methodFilter, setMethodFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -92,6 +93,7 @@ export function RequestLogAdmin(): React.ReactElement {
       const result = await RequestLogService.list({
         traceId: traceIdFilter || undefined,
         requestId: requestIdFilter || undefined,
+        path: pathFilter || undefined,
         apiSurface: surfaceFilter || undefined,
         method: methodFilter || undefined,
         status: statusFilter ? Number(statusFilter) : undefined,
@@ -107,7 +109,7 @@ export function RequestLogAdmin(): React.ReactElement {
     } finally {
       setLoading(false);
     }
-  }, [traceIdFilter, requestIdFilter, surfaceFilter, methodFilter, statusFilter, durationFilter, page, pageSize]);
+  }, [traceIdFilter, requestIdFilter, pathFilter, surfaceFilter, methodFilter, statusFilter, durationFilter, page, pageSize]);
 
   useEffect(() => {
     void load();
@@ -124,6 +126,7 @@ export function RequestLogAdmin(): React.ReactElement {
   const handleReset = () => {
     setTraceIdFilter('');
     setRequestIdFilter('');
+    setPathFilter('');
     setSurfaceFilter('');
     setMethodFilter('');
     setStatusFilter('');
@@ -179,6 +182,14 @@ export function RequestLogAdmin(): React.ReactElement {
           onChange={(event) => setRequestIdFilter(event.target.value)}
           onKeyDown={(event) => event.key === 'Enter' && handleSearch()}
           placeholder={t('admin.requestLog.filter.requestId')}
+          className={`${filterInputClass} flex-[2]`}
+        />
+        <input
+          type="text"
+          value={pathFilter}
+          onChange={(event) => setPathFilter(event.target.value)}
+          onKeyDown={(event) => event.key === 'Enter' && handleSearch()}
+          placeholder={t('admin.requestLog.filter.path')}
           className={`${filterInputClass} flex-[2]`}
         />
         <select

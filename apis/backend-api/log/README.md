@@ -1,6 +1,6 @@
 # LOG backend-api contract
 
-Request log query surface (`log.requestLogs.list`). Generated artifacts:
+Request log query surface (`requestLogs.list`). Generated artifacts:
 `openapi.json` (OpenAPI authority) and `routes.manifest.json` (route manifest).
 
 Refresh:

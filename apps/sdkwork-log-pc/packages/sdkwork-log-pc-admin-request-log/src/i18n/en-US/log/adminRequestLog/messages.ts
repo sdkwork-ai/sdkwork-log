@@ -4,6 +4,7 @@ export const enMessages: Record<string, string> = {
   'admin.requestLog.subtitle': 'Complete request/response records with redacted input/output bodies.',
   'admin.requestLog.filter.traceId': 'Trace ID',
   'admin.requestLog.filter.requestId': 'Request ID',
+  'admin.requestLog.filter.path': 'Path',
   'admin.requestLog.filter.apiSurface': 'API Surface',
   'admin.requestLog.filter.method': 'Method',
   'admin.requestLog.filter.status': 'Status',

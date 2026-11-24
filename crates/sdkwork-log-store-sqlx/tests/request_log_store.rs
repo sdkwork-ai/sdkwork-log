@@ -119,6 +119,40 @@ async fn list_filters_by_trace_id_and_status() {
 }
 
 #[tokio::test]
+async fn list_filters_by_path_prefix_and_matches_literally() {
+    let store = SqlxRequestLogStore::new_sqlite(test_pool().await);
+    let mut chat = record("trace-1", "req-1", 200);
+    chat.path = "/v1/chat/completions".to_owned();
+    store.save(chat).await.expect("save chat");
+    let mut nested = record("trace-2", "req-2", 200);
+    nested.path = "/v1/chat/completions/stream".to_owned();
+    store.save(nested).await.expect("save nested");
+    let mut embeddings = record("trace-3", "req-3", 200);
+    embeddings.path = "/v1/embeddings".to_owned();
+    store.save(embeddings).await.expect("save embeddings");
+
+    let nested_prefix = store
+        .list(RequestLogListQuery::default().with_path_prefix("/v1/chat"))
+        .await
+        .expect("list");
+    assert_eq!(2, nested_prefix.total);
+
+    let exact = store
+        .list(RequestLogListQuery::default().with_path_prefix("/v1/embeddings"))
+        .await
+        .expect("list");
+    assert_eq!(1, exact.total);
+    assert_eq!("req-3", exact.items[0].record.request_id);
+
+    // `%` and `_` in the input are literal, not LIKE wildcards.
+    let wildcard = store
+        .list(RequestLogListQuery::default().with_path_prefix("/v1/ch%t"))
+        .await
+        .expect("list");
+    assert_eq!(0, wildcard.total);
+}
+
+#[tokio::test]
 async fn list_pushes_pagination_to_sql() {
     let store = SqlxRequestLogStore::new_sqlite(test_pool().await);
     for index in 0..5 {

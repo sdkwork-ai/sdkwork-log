@@ -1,5 +1,5 @@
 //! Request log wire types (camelCase, aligned with the log backend-api
-//! contract `log.requestLogs.list` / `log.requestLogs.detail`).
+//! contract `requestLogs.list` / `requestLogs.retrieve`).
 
 export type LogApiSurface =
   | 'open-api'
@@ -41,10 +41,15 @@ export interface RequestLogDetail extends RequestLogItem {
   responseBody?: string | null;
 }
 
-/** List query filters accepted by `log.requestLogs.list`. */
+/** List query filters accepted by `requestLogs.list`. */
 export interface RequestLogListFilters {
   traceId?: string;
   requestId?: string;
+  /**
+   * Literal path prefix filter: matches the exact path and every nested path
+   * under it (`/v1/chat` also matches `/v1/chat/completions`).
+   */
+  path?: string;
   apiSurface?: LogApiSurface;
   operationId?: string;
   service?: string;
