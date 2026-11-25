@@ -1,13 +1,12 @@
 //! Tower `Layer`/`Service` implementing full request logging.
 
-use crate::capture::CaptureBody;
+use crate::capture::{CaptureBody, RequestCaptureBody};
 use crate::context::build_record_metadata;
 use crate::{ApiSurfaceResolver, LogRetentionPolicy, PathTemplateResolver, StoreHandle, TenantContextResolver};
 use axum::body::Body as AxumBody;
 use bytes::Bytes;
 use http::Request;
 use http_body::Body as HttpBody;
-use http_body_util::BodyExt;
 use sdkwork_log_core::{redact_body_text, truncate_body_text, LogApiSurface};
 use std::pin::Pin;
 use std::sync::{Arc, Mutex};
@@ -202,7 +201,6 @@ where
             .unwrap_or_else(|| DEFAULT_SERVICE.to_owned());
         let max_body_bytes = self.max_body_bytes;
 
-        let body_hint = request.body().size_hint();
         let (parts, body) = request.into_parts();
         let mut record = build_record_metadata(
             &parts,
@@ -217,38 +215,28 @@ where
         }
 
         Box::pin(async move {
-            // Buffer the request body only when its declared size is bounded
-            // within the cap; oversized or streamed bodies are skipped so
-            // memory stays flat.
-            let capture_request_body = body_hint
-                .upper()
-                .map(|upper| upper <= max_body_bytes as u64)
-                .unwrap_or(true);
-            let request_body_bytes = if capture_request_body {
-                match body.collect().await {
-                    Ok(collected) => Some(collected.to_bytes()),
-                    Err(error) => {
-                        let error: Box<dyn std::error::Error + Send + Sync> = error.into();
-                        warn!(%error, "request log: failed to buffer request body");
-                        None
-                    }
-                }
-            } else {
-                None
-            };
-
-            if let Some(bytes) = &request_body_bytes {
-                record.request_body = crate::capture_utf8_text(bytes)
-                    .and_then(|text| redact_body_text(&text))
-                    .map(|text| truncate_body_text(&text, max_body_bytes));
-            }
-
-            let rebuilt = Request::from_parts(
-                parts,
-                request_body_bytes
-                    .map(AxumBody::from)
-                    .unwrap_or_else(AxumBody::empty),
+            // Tee the request body instead of buffering it.
+            //
+            // A request body can be read only once, so a capture stage that
+            // consumes it MUST hand the handler the same bytes. This used to
+            // buffer the body only when its declared size fit the cap and then
+            // rebuild the forwarded request from that capture — so any body
+            // above the cap (or one whose buffering failed) was forwarded as an
+            // EMPTY body. Downstream that reads as a missing payload, not as a
+            // logging problem: the CloudRouter invocation rejected every
+            // `/v1/*` request larger than 256 KiB with `request body is empty`
+            // while the headers still carried the real `content-length`.
+            //
+            // The tee forwards every frame unchanged (any size, declared or
+            // streamed) and retains at most `max_body_bytes` for the log row, so
+            // observation can never strand the payload.
+            let captured_request_body = Arc::new(Mutex::new(Vec::<u8>::new()));
+            let forwarded_body = RequestCaptureBody::new(
+                body,
+                Arc::clone(&captured_request_body),
+                max_body_bytes,
             );
+            let rebuilt = Request::from_parts(parts, AxumBody::new(forwarded_body));
 
             let accepted_at = Instant::now();
             let response = match inner.call(rebuilt).await {
@@ -283,6 +271,13 @@ where
                     Ok(bytes) => bytes,
                     Err(_) => captured_response.lock().expect("capture lock").to_vec(),
                 };
+                let request_bytes = captured_request_body
+                    .lock()
+                    .expect("capture lock")
+                    .to_vec();
+                persisted.request_body = crate::capture_utf8_text(&request_bytes)
+                    .and_then(|text| redact_body_text(&text))
+                    .map(|text| truncate_body_text(&text, max_body_bytes));
                 persisted.response_body = crate::capture_utf8_text(&response_bytes)
                     .and_then(|text| redact_body_text(&text))
                     .map(|text| truncate_body_text(&text, max_body_bytes));
@@ -296,5 +291,160 @@ where
 
             Ok(response)
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::extract::Request as AxumRequest;
+    use axum::routing::post;
+    use axum::Router;
+    use sdkwork_log_core::{
+        RequestLogListQuery, RequestLogPage, RequestLogRecord, RequestLogRow, RequestLogStore,
+        RequestLogStoreError,
+    };
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Mutex;
+    use std::time::Duration;
+    use tower::ServiceExt;
+
+    /// In-memory store that records every persisted row (no database needed).
+    #[derive(Default)]
+    struct RecordingStore {
+        saved: Mutex<Vec<RequestLogRecord>>,
+        saves: AtomicUsize,
+    }
+
+    #[async_trait::async_trait]
+    impl RequestLogStore for RecordingStore {
+        async fn save(&self, record: RequestLogRecord) -> Result<(), RequestLogStoreError> {
+            self.saves.fetch_add(1, Ordering::SeqCst);
+            self.saved.lock().expect("saved lock").push(record);
+            Ok(())
+        }
+
+        async fn list(
+            &self,
+            _query: RequestLogListQuery,
+        ) -> Result<RequestLogPage, RequestLogStoreError> {
+            Ok(RequestLogPage {
+                items: Vec::new(),
+                total: 0,
+            })
+        }
+
+        async fn get_by_id(
+            &self,
+            _id: &str,
+        ) -> Result<Option<RequestLogRow>, RequestLogStoreError> {
+            Ok(None)
+        }
+    }
+
+    /// Inner service that echoes the request body it actually received, so the
+    /// test can prove byte-for-byte forwarding.
+    fn echo_router() -> Router {
+        Router::new().route(
+            "/backend/v3/api/log/echo",
+            post(|request: AxumRequest| async move {
+                let bytes = axum::body::to_bytes(request.into_body(), usize::MAX)
+                    .await
+                    .expect("inner service body");
+                axum::response::Response::new(AxumBody::from(bytes))
+            }),
+        )
+    }
+
+    async fn call_with_cap(
+        payload: Vec<u8>,
+        max_body_bytes: usize,
+    ) -> (Vec<u8>, Arc<RecordingStore>) {
+        let store = Arc::new(RecordingStore::default());
+        let app = RequestLoggingLayer::new(store.clone())
+            .with_service("tower-adapter-test")
+            .with_max_body_bytes(max_body_bytes)
+            .layer(echo_router());
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/backend/v3/api/log/echo")
+                    .header("content-type", "application/json")
+                    .body(AxumBody::from(payload))
+                    .expect("request"),
+            )
+            .await
+            .expect("call");
+        let forwarded = axum::body::to_bytes(AxumBody::new(response.into_body()), usize::MAX)
+            .await
+            .expect("echoed body")
+            .to_vec();
+        (forwarded, store)
+    }
+
+    async fn saved_rows(store: &RecordingStore) -> Vec<RequestLogRecord> {
+        for _ in 0..300 {
+            if store.saves.load(Ordering::SeqCst) > 0 {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+        std::mem::take(&mut *store.saved.lock().expect("saved lock"))
+    }
+
+    /// Regression: a request-log capture stage must never cost the handler its
+    /// payload.
+    ///
+    /// The capture used to buffer the body only when its declared size fit the
+    /// cap and to forward an EMPTY body otherwise. CloudRouter mounts this layer
+    /// around its whole `/v1` router, so every open-api request above the 256 KiB
+    /// default arrived at the invocation pipeline as an empty body — reported to
+    /// callers as `400 40002 request body is empty` even though the headers still
+    /// carried the real `content-length`.
+    #[tokio::test]
+    async fn oversized_request_body_is_forwarded_byte_for_byte() {
+        let mut payload = b"{\"prompt\":\"".to_vec();
+        payload.extend(std::iter::repeat(b'x').take(4096));
+        payload.extend_from_slice(b"\"}");
+
+        let (forwarded, store) = call_with_cap(payload.clone(), 256).await;
+
+        assert_eq!(
+            payload, forwarded,
+            "the inner service must receive the exact request body, not an empty or truncated one"
+        );
+        let saved = saved_rows(store.as_ref()).await;
+        assert_eq!(1, saved.len(), "one log row per request");
+        let recorded = saved[0]
+            .request_body
+            .as_deref()
+            .expect("a bounded prefix is still recorded");
+        assert!(recorded.starts_with("{\"prompt\":\""));
+        assert!(
+            recorded.len() <= 256 + "[TRUNCATED]".len(),
+            "the stored row stays bounded: recorded={} bytes",
+            recorded.len()
+        );
+        assert!(
+            recorded.len() < payload.len(),
+            "an oversized body is recorded as a prefix, not in full"
+        );
+    }
+
+    /// A body that fits the cap is forwarded intact and recorded in full.
+    #[tokio::test]
+    async fn small_request_body_is_forwarded_and_recorded_in_full() {
+        let payload = br#"{"prompt":"hi"}"#.to_vec();
+
+        let (forwarded, store) = call_with_cap(payload.clone(), 256).await;
+
+        assert_eq!(payload, forwarded);
+        let saved = saved_rows(store.as_ref()).await;
+        assert_eq!(1, saved.len());
+        assert_eq!(
+            Some("{\"prompt\":\"hi\"}".to_owned()),
+            saved[0].request_body
+        );
     }
 }

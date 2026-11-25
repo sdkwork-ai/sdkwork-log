@@ -34,15 +34,18 @@ mod capture;
 mod context;
 mod middleware;
 
-pub use capture::CaptureBody;
+pub use capture::{CaptureBody, RequestCaptureBody};
 pub use middleware::{RequestLoggingLayer, RequestLoggingMiddleware};
 
 use sdkwork_log_core::{LogApiSurface, RequestLogStore};
 use std::sync::Arc;
 
-/// Default cap for buffered body capture. Bodies whose `size_hint` upper bound
-/// exceeds this are skipped (metadata-only rows) so large uploads/downloads
-/// cannot balloon memory or storage.
+/// Default cap for the body prefix retained in a log row.
+///
+/// Capture is **observational**: the request body is forwarded to the handler
+/// byte for byte at any size, and only this many leading bytes are kept for the
+/// stored row (large uploads/downloads therefore cannot balloon memory or
+/// storage without ever costing the caller its payload).
 pub const DEFAULT_MAX_BODY_BUFFER_BYTES: usize = 256 * 1024;
 
 /// Tenant/user context extracted from request extensions by the hosting

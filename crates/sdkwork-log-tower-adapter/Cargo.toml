@@ -25,6 +25,10 @@ tower.workspace = true
 tracing.workspace = true
 
 [dev-dependencies]
-sdkwork-log-store-sqlx = { workspace = true }
+async-trait.workspace = true
+# The store forwards its driver features to `sdkwork-database-sqlx`
+# (`default-features = false`), so the PostgreSQL driver must be selected here or
+# the test graph compiles `DatabasePool` with no variants.
+sdkwork-log-store-sqlx = { workspace = true, features = ["postgres"] }
 serde_json.workspace = true
 sqlx = { workspace = true, features = ["postgres", "runtime-tokio"] }
