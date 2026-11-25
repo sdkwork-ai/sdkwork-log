@@ -34,7 +34,8 @@
     "_sdkwork:verify": "pnpm run test",
     "stop": "pnpm exec sdkwork-app stop",
     "_sdkwork:build": "cargo build --workspace --release",
-    "_sdkwork:check": "pnpm run db:validate && pnpm run api:assembly:validate && pnpm run typecheck && cargo check --workspace"
+    "_sdkwork:check": "pnpm run db:validate && pnpm run api:assembly:validate && pnpm run typecheck && cargo check --workspace && pnpm check:body-read-contract",
+    "check:body-read-contract": "node ../sdkwork-specs/tools/check-body-read-contract.mjs --root ."
   },
   "devDependencies": {
     "@sdkwork/app-topology": "workspace:*"
