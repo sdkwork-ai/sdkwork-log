@@ -78,7 +78,8 @@
       "cargo test -p sdkwork-routes-log-backend-api --test routes_contract",
       "cargo test -p sdkwork-routes-log-backend-api --test openapi_authority",
       "pnpm install",
-      "pnpm typecheck"
+      "pnpm typecheck",
+      "node ../sdkwork-specs/tools/check-body-read-contract.mjs --root ."
     ]
   }
 }
