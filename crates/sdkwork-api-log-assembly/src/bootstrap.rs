@@ -25,6 +25,41 @@ use sdkwork_web_core::{HttpRouteManifest, WebRequestContext};
 /// Default request-log service identity recorded on captured rows.
 pub const DEFAULT_LOG_SERVICE_NAME: &str = "sdkwork-log";
 
+/// Environment key that raises or lowers how much of a request/response body a
+/// capture row retains.
+///
+/// This is a **retention** budget, not an acceptance limit: capture now tee's the
+/// request body through unchanged at any size, so this value can never cause a
+/// payload to be dropped on its way to the handler. It only decides how many
+/// leading bytes are persisted for inspection.
+pub const ENV_CAPTURE_BODY_MAX_BYTES: &str = "SDKWORK_LOG_CAPTURE_BODY_MAX_BYTES";
+
+/// Default retained body prefix (1 MiB).
+///
+/// The previous 256 KiB default was small enough that ordinary long-form API
+/// payloads — an LLM prompt with a long conversation, for example — were stored
+/// as a truncated prefix. Rows stay bounded, but a megabyte covers realistic JSON
+/// request bodies instead of only short ones.
+pub const DEFAULT_CAPTURE_BODY_MAX_BYTES: usize = 1024 * 1024;
+
+/// Resolves the retained body budget from a raw environment value.
+///
+/// Unset, blank, non-numeric, or zero values fall back to
+/// [`DEFAULT_CAPTURE_BODY_MAX_BYTES`]; a deployment can never disable capture or
+/// set it to a nonsensical size by misconfiguration.
+#[must_use]
+pub fn resolve_capture_body_max_bytes(raw: Option<&str>) -> usize {
+    raw.map(str::trim)
+        .and_then(|value| value.parse::<usize>().ok())
+        .filter(|value| *value > 0)
+        .unwrap_or(DEFAULT_CAPTURE_BODY_MAX_BYTES)
+}
+
+fn configured_capture_body_max_bytes() -> usize {
+    let raw = std::env::var(ENV_CAPTURE_BODY_MAX_BYTES).ok();
+    resolve_capture_body_max_bytes(raw.as_deref())
+}
+
 pub type ApiAssembly = ApiAssemblyContribution;
 
 /// Backend business surface: the query router plus the capture layer the
@@ -158,6 +193,7 @@ pub fn assemble_backend_business_router(
     let store = host.store();
     let mut layer = RequestLoggingLayer::new(store.clone())
         .with_service(service)
+        .with_max_body_bytes(configured_capture_body_max_bytes())
         .with_tenant_resolver(principal_tenant_user_resolver)
         .with_trust_forwarded_headers(trust_forwarded_headers);
     if let Some(policy) = retention_policy {
@@ -229,4 +265,39 @@ pub async fn web_module() -> Result<WebModule, String> {
 /// (platform gateways, API_ASSEMBLY_SPEC §4.1.1).
 pub async fn web_module_with_pool(pool: DatabasePool) -> Result<WebModule, String> {
     Ok(WebModule::from_contribution(assemble_api_router_with_pool(pool).await?))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn capture_body_budget_defaults_to_one_megabyte() {
+        assert_eq!(
+            DEFAULT_CAPTURE_BODY_MAX_BYTES,
+            resolve_capture_body_max_bytes(None)
+        );
+        assert_eq!(
+            DEFAULT_CAPTURE_BODY_MAX_BYTES,
+            resolve_capture_body_max_bytes(Some("  "))
+        );
+    }
+
+    #[test]
+    fn capture_body_budget_honors_a_configured_size() {
+        assert_eq!(4 * 1024 * 1024, resolve_capture_body_max_bytes(Some("4194304")));
+        assert_eq!(512, resolve_capture_body_max_bytes(Some(" 512 ")));
+    }
+
+    #[test]
+    fn capture_body_budget_rejects_nonsensical_values() {
+        // A misconfigured deployment must not disable capture or retain nothing.
+        for raw in ["0", "-1", "abc", "1e6", ""] {
+            assert_eq!(
+                DEFAULT_CAPTURE_BODY_MAX_BYTES,
+                resolve_capture_body_max_bytes(Some(raw)),
+                "raw={raw}"
+            );
+        }
+    }
 }

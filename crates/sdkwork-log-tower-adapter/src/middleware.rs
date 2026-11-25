@@ -503,4 +503,51 @@ mod tests {
             saved[0].request_body
         );
     }
+
+    /// Megabyte-scale payloads must survive capture unchanged.
+    ///
+    /// The production failure was a 1.4 MB LLM prompt that arrived at the
+    /// dependent service as zero bytes, so the regression is asserted at that
+    /// order of magnitude, not only at a few kilobytes.
+    #[tokio::test]
+    async fn megabyte_scale_bodies_are_forwarded_without_loss() {
+        let cap = 64 * 1024;
+        for size in [1024 * 1024usize, 8 * 1024 * 1024] {
+            let payload = vec![b'x'; size];
+
+            let (forwarded, store) = call_with_cap(payload.clone(), cap).await;
+
+            assert_eq!(size, forwarded.len(), "forwarded length for a {size}-byte body");
+            assert_eq!(payload, forwarded, "forwarded bytes for a {size}-byte body");
+            let saved = saved_rows(store.as_ref()).await;
+            assert_eq!(1, saved.len());
+            let recorded = saved[0]
+                .request_body
+                .as_deref()
+                .expect("a bounded prefix is recorded");
+            assert_eq!(
+                cap,
+                recorded.len(),
+                "the stored row stays bounded for a {size}-byte body"
+            );
+        }
+    }
+
+    /// Raising the capture budget lets a long prompt be recorded in full.
+    ///
+    /// 512 KiB sits above the old 256 KiB default and below the platform's 1 MiB
+    /// budget, so this is the case that used to be truncated for every long
+    /// conversation.
+    #[tokio::test]
+    async fn bodies_within_a_raised_capture_budget_are_recorded_in_full() {
+        let payload = vec![b'x'; 512 * 1024];
+
+        let (forwarded, store) = call_with_cap(payload.clone(), 1024 * 1024).await;
+
+        assert_eq!(payload, forwarded);
+        let saved = saved_rows(store.as_ref()).await;
+        assert_eq!(1, saved.len());
+        let recorded = saved[0].request_body.as_deref().expect("recorded body");
+        assert_eq!(payload.len(), recorded.len());
+    }
 }
