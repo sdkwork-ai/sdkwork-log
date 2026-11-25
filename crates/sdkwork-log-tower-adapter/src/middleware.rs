@@ -7,6 +7,7 @@ use axum::body::Body as AxumBody;
 use bytes::Bytes;
 use http::Request;
 use http_body::Body as HttpBody;
+use http_body_util::BodyExt;
 use sdkwork_log_core::{redact_body_text, truncate_body_text, LogApiSurface};
 use std::pin::Pin;
 use std::sync::{Arc, Mutex};
@@ -201,6 +202,7 @@ where
             .unwrap_or_else(|| DEFAULT_SERVICE.to_owned());
         let max_body_bytes = self.max_body_bytes;
 
+        let body_hint = request.body().size_hint();
         let (parts, body) = request.into_parts();
         let mut record = build_record_metadata(
             &parts,
@@ -215,39 +217,77 @@ where
         }
 
         Box::pin(async move {
-            // Tee the request body instead of buffering it.
+            // Read the request body at most once, and always hand the handler a
+            // faithful representation of it.
             //
-            // A request body can be read only once, so a capture stage that
-            // consumes it MUST hand the handler the same bytes. This used to
-            // buffer the body only when its declared size fit the cap and then
-            // rebuild the forwarded request from that capture — so any body
-            // above the cap (or one whose buffering failed) was forwarded as an
-            // EMPTY body. Downstream that reads as a missing payload, not as a
-            // logging problem: the CloudRouter invocation rejected every
-            // `/v1/*` request larger than 256 KiB with `request body is empty`
-            // while the headers still carried the real `content-length`.
+            // A request body can be read exactly once, so a capture stage that
+            // consumes it MUST hand the handler the same bytes. Reading it and
+            // then rebuilding the forwarded request from the capture is only
+            // safe while the capture is complete — this used to be done
+            // unconditionally, so any body above the cap (or one whose buffering
+            // failed) was forwarded as an EMPTY body. Downstream that reads as a
+            // missing payload, not as a logging problem: the CloudRouter
+            // invocation rejected every `/v1/*` request larger than 256 KiB with
+            // `request body is empty` while the headers still carried the real
+            // `content-length`.
             //
-            // The tee forwards every frame unchanged (any size, declared or
-            // streamed) and retains at most `max_body_bytes` for the log row, so
-            // observation can never strand the payload.
+            // Two bounded paths keep both guarantees:
+            //  * declared size within the cap → buffer once and replay the exact
+            //    bytes (the row records the body in full, as before);
+            //  * larger or unknown length → forward the original stream through a
+            //    tee that only retains a bounded prefix.
             let captured_request_body = Arc::new(Mutex::new(Vec::<u8>::new()));
-            let forwarded_body = RequestCaptureBody::new(
-                body,
-                Arc::clone(&captured_request_body),
-                max_body_bytes,
-            );
-            let rebuilt = Request::from_parts(parts, AxumBody::new(forwarded_body));
+            let capture_in_full = body_hint
+                .upper()
+                .map(|upper| upper <= max_body_bytes as u64)
+                .unwrap_or(false);
+            let mut body_read_error: Option<Box<dyn std::error::Error + Send + Sync>> = None;
+            let rebuilt = if capture_in_full {
+                match body.collect().await {
+                    Ok(collected) => {
+                        let bytes = collected.to_bytes();
+                        *captured_request_body.lock().expect("capture lock") = bytes.to_vec();
+                        Request::from_parts(parts, AxumBody::from(bytes))
+                    }
+                    Err(error) => {
+                        // The stream is already gone, so it cannot be forwarded.
+                        // Answering with an explicit failure is the only honest
+                        // outcome; forwarding an empty body would blame the
+                        // caller's payload for a transport failure.
+                        let error: Box<dyn std::error::Error + Send + Sync> = error.into();
+                        warn!(
+                            %error,
+                            "request log: request body could not be read; rejecting instead of forwarding an empty body"
+                        );
+                        body_read_error = Some(error);
+                        Request::from_parts(parts, AxumBody::empty())
+                    }
+                }
+            } else {
+                Request::from_parts(
+                    parts,
+                    AxumBody::new(RequestCaptureBody::new(
+                        body,
+                        Arc::clone(&captured_request_body),
+                        max_body_bytes,
+                    )),
+                )
+            };
 
             let accepted_at = Instant::now();
-            let response = match inner.call(rebuilt).await {
-                Ok(response) => response,
-                Err(error) => {
-                    let error: Box<dyn std::error::Error + Send + Sync> = error.into();
-                    warn!(%error, "request log: inner service failed; recording 500");
-                    http::Response::builder()
-                        .status(500)
-                        .body(AxumBody::empty())
-                        .expect("valid 500 response")
+            let response = if body_read_error.is_some() {
+                unreadable_request_body_response()
+            } else {
+                match inner.call(rebuilt).await {
+                    Ok(response) => response,
+                    Err(error) => {
+                        let error: Box<dyn std::error::Error + Send + Sync> = error.into();
+                        warn!(%error, "request log: inner service failed; recording 500");
+                        http::Response::builder()
+                            .status(500)
+                            .body(AxumBody::empty())
+                            .expect("valid 500 response")
+                    }
                 }
             };
             let status_code = response.status().as_u16();
@@ -292,6 +332,22 @@ where
             Ok(response)
         })
     }
+}
+
+/// 502 for a request whose body was taken by capture but could not be read.
+///
+/// Returning an explicit gateway failure preserves the "capture is
+/// observational" contract: a logging stage must never fabricate an empty
+/// payload for the handler, because the dependent service would report that as a
+/// caller mistake (`request body is empty`) instead of a transport failure.
+fn unreadable_request_body_response() -> http::Response<AxumBody> {
+    http::Response::builder()
+        .status(http::StatusCode::BAD_GATEWAY)
+        .header(http::header::CONTENT_TYPE, "application/problem+json")
+        .body(AxumBody::from(
+            r#"{"type":"about:blank","title":"Bad gateway","status":502,"detail":"the request body could not be read"}"#,
+        ))
+        .expect("valid 502 response")
 }
 
 #[cfg(test)]
