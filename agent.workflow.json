@@ -60,6 +60,12 @@
       "repository": "sdkwork-ai/sdkwork-ui",
       "refInput": "SDKWORK_UI_REF",
       "tokenSecret": "SDKWORK_RELEASE_TOKEN"
+    },
+    {
+      "id": "sdkwork-specs",
+      "repository": "sdkwork-ai/sdkwork-specs",
+      "refInput": "SDKWORK_SPECS_REF",
+      "tokenSecret": "SDKWORK_RELEASE_TOKEN"
     }
   ],
   "toolchains": {},
